@@ -1,0 +1,19 @@
+{
+  "name": "@devticon-os/graphql-codegen-axios",
+  "version": "0.0.0",
+  "license": "MIT",
+  "main": "src/index.js",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "peerDependencies": {
+    "axios": "^1.3.3",
+    "graphql": "^16.6.0"
+  },
+  "devDependencies": {
+    "prettier": "^2.8.4"
+  }
+}
