@@ -1,9 +1,9 @@
-### graphql-codegen-axios
+## graphql-codegen-axios
 A code generation tool that generates an Axios SDK based on your GraphQL queries. This tool makes it easy to consume GraphQL APIs in your Axios projects by automatically generating code for querying your GraphQL API and mapping the results to JavaScript objects.
 
 ### Features
 - Generates TypeScript code for querying GraphQL APIs with Axios.
-- Supports the @first, @firstOrFail, and @nonNullable directives.
+- Supports the `@first`, `@firstOrFail`, and `@nonNullable` directives.
 
 ### Usage
 To use graphql-codegen-axios, you need to have Node.js installed on your system.
