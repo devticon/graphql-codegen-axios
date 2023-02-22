@@ -12,23 +12,22 @@ Installation
 You can install graphql-codegen-axios using npm:
 
 ```sh
-npm install graphql-codegen-axios --save-dev
-yarn add graphql-codegen-axios -D
-pnpm add graphql-codegen-axios -D
+npm install @devticon-os/graphql-codegen-axios --save-dev
+yarn add @devticon-os/graphql-codegen-axios -D
+pnpm add @devticon-os/graphql-codegen-axios -D
 ```
 ### Configuration
 In your project's codegen.yml configuration file, add the following configuration:
 
 ```yml
-overwrite: true
 schema: https://your-graphql-api.com/graphql
 documents: src/**/*.graphql
 generates:
-src/generated/graphql.ts:
-plugins:
-- typescript
-- typescript-operations
-- graphql-codegen-axios
+    src/generated/graphql.ts:
+        plugins:
+        - typescript
+        - typescript-operations
+        - @devticon-os/graphql-codegen-axios
 ```
 You can customize the output file path and other settings as per your requirements.
 
