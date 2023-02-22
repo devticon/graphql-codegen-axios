@@ -1,0 +1,5 @@
+query getCats {
+  cats {
+    id
+  }
+}

@@ -63,6 +63,29 @@ query GetFirstUser {
     }
 }
 ```
+### Field Selection
+If your query selects only one field, it will be returned directly instead of being wrapped in an object. For example, the following query:
+
+```graphql
+query getCats {
+  cats {
+    id
+  }
+}
+```
+Will generate code that directly returns the name field:
+
+```typescript
+export const getSdk = (client: AxiosInstance) => ({
+  getCats: (variables: GetCatsQueryVariables, config?: AxiosRequestConfig) =>
+    client
+      .post<GraphqlResponse<GetCatsQuery>>('', { variables, query: getCatsRawQuery }, config)
+      .then(handleResponse) // returns data from axios response
+      .then(unpackSingleResults('cats')) // returns "cats" from GetCatsQuery object,
+});
+
+```
+
 ### Generating Code
 You can generate the Axios SDK by running the following command:
 
