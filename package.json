@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "license": "MIT",
   "main": "src/index.js",
+  "repository": "https://github.com/devticon/graphql-codegen-axios",
+  "author": {
+    "name": "krs",
+    "email": "k.kamasa@gmail.com"
+  },
   "files": [
     "src"
   ],
