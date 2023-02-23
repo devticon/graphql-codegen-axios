@@ -1,6 +1,6 @@
 {
   "name": "@devticon-os/graphql-codegen-axios",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "license": "MIT",
   "main": "src/index.js",
   "repository": "https://github.com/devticon/graphql-codegen-axios",

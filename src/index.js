@@ -4,7 +4,15 @@ const { findUsageInputs } = require('./input');
 const { getVariablesFields } = require('./variables');
 const { getResultsFields } = require('./results');
 const { findScalars } = require('./scalar');
-const { renderType, renderQuery, renderSdk, renderScalars, renderEnum, renderHeader } = require('./render');
+const {
+  renderType,
+  renderQuery,
+  renderSdk,
+  renderScalars,
+  renderEnum,
+  renderHeader,
+  renderFragment,
+} = require('./render');
 const { findUsageEnums } = require('./enums');
 const { findUsageFragments } = require('./fragments');
 
@@ -84,6 +92,7 @@ module.exports = {
         ...enums.map(e => renderEnum(e)),
         renderHeader('FRAGMENTS'),
         ...fragments.map(t => renderType(t)),
+        ...fragments.map(f => renderFragment(f)),
         renderHeader('INPUTS'),
         ...inputs.map(t => renderType(t)),
         renderHeader('TYPES'),

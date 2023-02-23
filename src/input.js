@@ -18,7 +18,7 @@ const findUsageInputs = (documents, schema) => {
       }
     }
   }
-  return inputs.map(input => ({
+  return [...new Set(inputs)].map(input => ({
     name: input.name,
     fields: getInputFields(input),
   }));

@@ -45,7 +45,7 @@ const renderQuery = ({ name, ast, allFragments }) => {
   const raw = print(ast).replace('@firstOrFail', '').replace('@first', '').replace('@nonNullable', '');
 
   let fragments = getUsedFragments(raw, allFragments);
-  fragments = [...new Set(fragments)].map(f => print(f.type));
+  fragments = [...new Set(fragments)].map(f => `\${${f.name}FragmentQuery}`);
 
   const gql = fragments.join('\n') + '\n' + raw;
   return `const ${name}RawQuery = \`${gql}\`;`;
@@ -60,6 +60,10 @@ const renderEnum = e => {
   }
   str += `};`;
   return str;
+};
+
+const renderFragment = fragment => {
+  return `export const ${fragment.name}FragmentQuery = \`${print(fragment.type)}\`;`;
 };
 const renderScalars = (scalars, map = {}) => {
   map = {
@@ -76,4 +80,4 @@ const renderScalars = (scalars, map = {}) => {
     })
     .join(',')}};`;
 };
-module.exports = { renderType, renderQuery, renderSdk, renderScalars, renderEnum, renderHeader };
+module.exports = { renderType, renderQuery, renderSdk, renderScalars, renderEnum, renderHeader, renderFragment };
