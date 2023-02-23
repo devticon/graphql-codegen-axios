@@ -42,6 +42,7 @@ const renderTypeField = (fields, config) => {
           tsType += `{${renderTypeField(fields)}}`;
         }
       }
+      tsType = `(${tsType})`;
       if (isList) {
         tsType += '[]';
       }
