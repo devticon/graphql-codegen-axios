@@ -45,6 +45,7 @@ const getInputFields = input => {
       name: field.name,
       fields: [],
       ...typeInfo,
+      inLine: !typeInfo.isScalar,
     };
   });
 };

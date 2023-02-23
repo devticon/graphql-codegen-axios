@@ -31,4 +31,4 @@ const getField = (parent, field, schema, document) => {
   };
 };
 
-module.exports = { getResultsFields };
+module.exports = { getResultsFields, getField };

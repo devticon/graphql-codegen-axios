@@ -18,7 +18,7 @@ const getVariableType = (type, schema, isList = false, isNullable = true) => {
   }
   const typeName = type.name.value;
   const isScalar = !findInputInSchema(typeName, schema);
-  return { type: type.type, isList, isNullable, typeName, isScalar };
+  return { type: type.type, isList, isNullable, typeName, isScalar, inLine: !isScalar };
 };
 
 module.exports = { getVariablesFields };

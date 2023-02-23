@@ -1,22 +1,27 @@
 const { print } = require('graphql/index');
 const { getUsedFragments } = require('./query');
-const renderType = ({ name, fields }) => {
-  return `export type ${name} = { ${renderTypeField(fields)} };`;
+const { GraphQLInputObjectType } = require('graphql/type');
+const renderType = ({ name, fields, union }) => {
+  return `export type ${name} = ${union ? union.join('&') + '&' : ''} { ${renderTypeField(fields)} };`;
 };
+
+const renderHeader = text => `/** \n ${text} \n **/`;
 const renderTypeField = fields => {
   return fields
-    .map(({ isList, isNullable, typeName, name, fields, isScalar, union }) => {
+    .map(({ isList, isNullable, typeName, name, fields, isScalar, union, type, inLine }) => {
       let tsType = '';
       if (union && union.length) {
         tsType += [...union, ''].join(' & ');
       }
       if (isScalar) {
         tsType += getScalarTsType(typeName);
+      } else if (inLine) {
+        tsType += typeName;
       } else {
-        if (fields.length) {
-          tsType += `{${renderTypeField(fields)}}`;
-        } else {
+        if (type instanceof GraphQLInputObjectType) {
           tsType += typeName;
+        } else {
+          tsType += `{${renderTypeField(fields)}}`;
         }
       }
       return `${name}${isNullable ? '?' : ''}: ${tsType}${isList ? '[]' : ''}`;
@@ -71,4 +76,4 @@ const renderScalars = (scalars, map = {}) => {
     })
     .join(',')}};`;
 };
-module.exports = { renderType, renderQuery, renderSdk, renderScalars, renderEnum };
+module.exports = { renderType, renderQuery, renderSdk, renderScalars, renderEnum, renderHeader };

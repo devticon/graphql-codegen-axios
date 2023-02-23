@@ -1,12 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-const { print } = require('graphql');
-const { GraphQLList, GraphQLNonNull, GraphQLInputObjectType } = require('graphql/type');
 const { findUsageInputs } = require('./input');
 const { getVariablesFields } = require('./variables');
 const { getResultsFields } = require('./results');
 const { findScalars } = require('./scalar');
-const { renderType, renderQuery, renderSdk, renderScalars, renderEnum } = require('./render');
+const { renderType, renderQuery, renderSdk, renderScalars, renderEnum, renderHeader } = require('./render');
 const { findUsageEnums } = require('./enums');
 const { findUsageFragments } = require('./fragments');
 
@@ -80,10 +78,15 @@ module.exports = {
 
       const enums = findUsageEnums(types, schema);
       return [
+        renderHeader('HELPERS'),
         helpers,
+        renderHeader('Scalars'),
         renderScalars(scalars),
+        renderHeader('Enum'),
         ...enums.map(e => renderEnum(e)),
+        renderHeader('TYPES'),
         ...types.map(t => renderType(t)),
+        renderHeader('QUERIES'),
         ...queries.map(q => renderQuery(q)),
         renderSdk(functions),
       ].join('\n');

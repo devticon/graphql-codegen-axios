@@ -1,29 +1,23 @@
 const { GraphQLObjectType } = require('graphql/type');
 const { getGraphqlTypeInfo } = require('./types');
+const { getField } = require('./results');
 const findUsageFragments = (documents, schema) => {
   const fragments = [];
   for (let { document } of documents) {
     for (const definition of document.definitions) {
       if (definition.kind === 'FragmentDefinition') {
+        const name = definition.name.value;
         const parentName = definition.typeCondition.name.value;
         const parent = findObjectTypeInSchema(schema, parentName);
+        const nestedFragments = definition.selectionSet.selections.filter(s => s.kind === 'FragmentSpread');
+        const fields = definition.selectionSet.selections.filter(s => s.kind !== 'FragmentSpread');
+        const union = nestedFragments.map(f => f.name.value);
+
         fragments.push({
-          name: definition.name.value,
+          name,
           type: definition,
-          fields: definition.selectionSet.selections.map(f => {
-            const selections = f.selectionSet?.selections || [];
-            const fragments = selections.filter(s => s.kind === 'FragmentSpread');
-            const union = fragments.map(f => f.name.value);
-            const parentField = parent._fields[f.name.value];
-            const typeInfo = getGraphqlTypeInfo(parentField.type);
-            return {
-              name: f.name.value,
-              ...typeInfo,
-              fields: [],
-              typeName: union.length ? '{}' : typeInfo.typeName,
-              union,
-            };
-          }),
+          union,
+          fields: fields.map(f => getField(parent, f, schema)),
         });
       }
     }
