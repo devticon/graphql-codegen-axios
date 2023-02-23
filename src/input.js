@@ -21,6 +21,7 @@ const findUsageInputs = (documents, schema) => {
   return [...new Set(inputs)].map(input => ({
     name: input.name,
     fields: getInputFields(input),
+    gqlType: 'input',
   }));
 };
 const findInputInSchema = (name, schema) => {

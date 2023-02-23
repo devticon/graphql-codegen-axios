@@ -1,22 +1,39 @@
 const { print } = require('graphql/index');
 const { getUsedFragments } = require('./query');
 const { GraphQLInputObjectType } = require('graphql/type');
-const renderType = ({ name, fields, union }) => {
-  return `export type ${name} = ${union ? union.join('&') + '&' : ''} { ${renderTypeField(fields)} };`;
+
+const getName = (name, type, config) => {
+  const suffix = config.suffix ? config.suffix[type] : '';
+  return `${name}${suffix}`;
+};
+const renderType = ({ name, fields, union, isList, isNullable, gqlType }, config) => {
+  let tsType = '';
+  if (union && union.length) {
+    tsType += [...union.map(u => getName(u, 'fragment', config)), ''].join(' & ');
+  }
+  tsType += `{${renderTypeField(fields, config)}}`;
+  if (isList) {
+    tsType += '[]';
+  }
+  if (isNullable) {
+    tsType = `Nullable<${tsType}>`;
+  }
+
+  return `export type ${gqlType ? getName(name, gqlType, config) : name} =  ${tsType}`;
 };
 
 const renderHeader = text => `/** \n ${text} \n **/`;
-const renderTypeField = fields => {
+const renderTypeField = (fields, config) => {
   return fields
-    .map(({ isList, isNullable, typeName, name, fields, isScalar, union, type, inLine }) => {
+    .map(({ isList, isNullable, typeName, name, fields, isScalar, union, type, inLine, gqlType }) => {
       let tsType = '';
       if (union && union.length) {
-        tsType += [...union, ''].join(' & ');
+        tsType += [...union.map(u => getName(u, 'fragment', config)), ''].join(' & ');
       }
       if (isScalar) {
         tsType += getScalarTsType(typeName);
       } else if (inLine) {
-        tsType += typeName;
+        tsType += gqlType ? getName(typeName, gqlType, config) : typeName;
       } else {
         if (type instanceof GraphQLInputObjectType) {
           tsType += typeName;
@@ -24,7 +41,13 @@ const renderTypeField = fields => {
           tsType += `{${renderTypeField(fields)}}`;
         }
       }
-      return `${name}${isNullable ? '?' : ''}: ${tsType}${isList ? '[]' : ''}`;
+      if (isList) {
+        tsType += '[]';
+      }
+      if (isNullable) {
+        tsType = `Nullable<${tsType}>`;
+      }
+      return `${name}: ${tsType}`;
     })
     .join(',\n');
 };
@@ -37,8 +60,12 @@ const renderSdk = functions => {
   str += '}';
   return `export const getSdk = (client: AxiosInstance) => (${str})`;
 };
-const renderFunction = ({ name, variables, results }) => {
-  return `(variables: ${variables.name}, config?: AxiosRequestConfig) => client.post<GraphqlResponse<${results.name}>>("", {variables, query: ${name}RawQuery}, config).then(handleResponse)`;
+const renderFunction = ({ name, variables, results, chain }) => {
+  const chainStr = chain.map(f => `.then(${f})`).join('');
+  return `(variables: ${variables.name}, config?: AxiosRequestConfig): Promise<${results.name}> => {
+    const body = {variables, query: ${name}RawQuery};
+    return client.post("", body, config).then(handleResponse)${chainStr}
+}`;
 };
 
 const renderQuery = ({ name, ast, allFragments }) => {
@@ -53,8 +80,8 @@ const renderQuery = ({ name, ast, allFragments }) => {
 
 const getScalarTsType = name => `Scalar["${name}"]`;
 
-const renderEnum = e => {
-  let str = `export enum ${e.name} {`;
+const renderEnum = (e, config) => {
+  let str = `export enum ${getName(e.name, 'enum', config)} {`;
   for (let { name, value } of e.values) {
     str += `${name} = "${value}",`;
   }

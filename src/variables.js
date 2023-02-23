@@ -1,4 +1,5 @@
 const { findInputInSchema } = require('./input');
+const { getGraphqlType } = require('./types');
 const getVariablesFields = (definition, schema) => {
   return definition.variableDefinitions.map(variable => ({
     name: variable.variable.name.value,
@@ -18,7 +19,15 @@ const getVariableType = (type, schema, isList = false, isNullable = true) => {
   }
   const typeName = type.name.value;
   const isScalar = !findInputInSchema(typeName, schema);
-  return { type: type.type, isList, isNullable, typeName, isScalar, inLine: !isScalar };
+  return {
+    type: type.type,
+    isList,
+    isNullable,
+    typeName,
+    isScalar,
+    inLine: !isScalar,
+    gqlType: isScalar ? 'scalar' : 'input',
+  };
 };
 
 module.exports = { getVariablesFields };

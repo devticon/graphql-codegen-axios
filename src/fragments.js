@@ -18,6 +18,7 @@ const findUsageFragments = (documents, schema) => {
           type: definition,
           union,
           fields: fields.map(f => getField(parent, f, schema)),
+          gqlType: 'fragment',
         });
       }
     }

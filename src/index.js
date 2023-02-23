@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { findUsageInputs } = require('./input');
 const { getVariablesFields } = require('./variables');
-const { getResultsFields } = require('./results');
+const { getResultsFields, getResultType } = require('./results');
 const { findScalars } = require('./scalar');
 const {
   renderType,
@@ -15,8 +15,8 @@ const {
 } = require('./render');
 const { findUsageEnums } = require('./enums');
 const { findUsageFragments } = require('./fragments');
-
-const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+const { getFunctionChain, isSingleResultOperation } = require('./functions');
+const { capitalize } = require('./utils');
 
 const helpers = fs.readFileSync(path.join(__dirname, 'helpers.ts'), 'utf-8');
 module.exports = {
@@ -35,11 +35,9 @@ module.exports = {
             continue;
           }
           const name = definition.name.value;
+          const useSingleResults = isSingleResultOperation(definition);
 
-          const results = {
-            name: capitalize(`${name}Results`),
-            fields: getResultsFields(definition, schema, document),
-          };
+          const results = getResultType(definition, schema, document, useSingleResults);
           types.push(results);
 
           const variables = {
@@ -58,28 +56,9 @@ module.exports = {
             name,
             results,
             variables,
-            chain: [],
+            chain: getFunctionChain(definition, useSingleResults),
           });
         }
-
-        //   if (definition.selectionSet.selections.length === 1) {
-        //     if (!['query', 'mutation'].includes(definition.operation)) {
-        //       continue;
-        //     }
-        //     const selection = definition.selectionSet.selections[0];
-        //     const directives = selection.directives.map(d => d.name.value);
-        //     const propertyName = selection.name.value;
-        //     func += `.then(unpackSingleResults("${propertyName}"))\n`;
-        //     for (let directive of directives) {
-        //       if (directive === 'nonNullable' || directive === 'firstOrFail') {
-        //         func += `.then(${directive}({variables, query: ${name}RawQuery}))\n`;
-        //       } else {
-        //         func += `.then(${directive})\n`;
-        //       }
-        //     }
-        //   }
-        //   functions[name] = func;
-        // }
       }
 
       const enums = findUsageEnums([...types, ...inputs, ...fragments], schema);
@@ -89,14 +68,14 @@ module.exports = {
         renderHeader('Scalars'),
         renderScalars(scalars),
         renderHeader('Enum'),
-        ...enums.map(e => renderEnum(e)),
+        ...enums.map(e => renderEnum(e, config)),
         renderHeader('FRAGMENTS'),
-        ...fragments.map(t => renderType(t)),
+        ...fragments.map(t => renderType(t, config)),
         ...fragments.map(f => renderFragment(f)),
         renderHeader('INPUTS'),
-        ...inputs.map(t => renderType(t)),
+        ...inputs.map(t => renderType(t, config)),
         renderHeader('TYPES'),
-        ...types.map(t => renderType(t)),
+        ...types.map(t => renderType(t, config)),
         renderHeader('QUERIES'),
         ...queries.map(q => renderQuery(q)),
         renderSdk(functions),

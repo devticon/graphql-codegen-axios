@@ -1,5 +1,7 @@
-import { AxiosResponse, AxiosInstance, AxiosRequestConfig } from "axios";
-import { GraphQLError } from "graphql";
+import { AxiosResponse, AxiosInstance, AxiosRequestConfig } from 'axios';
+import { GraphQLError } from 'graphql';
+
+type Nullable<T> = T | undefined;
 
 type GraphqlResponse<T> = {
   data: T;
@@ -10,45 +12,41 @@ type GraphqlRequestParams = {
   query: string;
   variables: any;
 };
-const first = <T>(data: T[]) => data[0];
+const first = (key: string) => (data: any) => {
+  data[key] = data[key][0];
+  return data;
+};
 
-const firstOrFail =
-  <T>(reqParams: GraphqlRequestParams) =>
-    (data: T[]) => {
-      const row = data[0];
-      if (!row) {
-        throw new QueryNoResultsError(reqParams);
-      }
-      return row;
-    };
+const firstOrFail = (key: string, reqParams: GraphqlRequestParams) => (data: any) => {
+  data[key] = (data as any)[key][0];
+  if (!data[key]) {
+    throw new QueryNoResultsError(reqParams);
+  }
+  return data;
+};
 
 const nonNullable =
   <T>(reqParams: GraphqlRequestParams) =>
-    (data: T) => {
-      const row = data;
-      if (!row) {
-        throw new QueryNoResultsError(reqParams);
-      }
-      return row;
-    };
+  (data: T) => {
+    const row = data;
+    if (!row) {
+      throw new QueryNoResultsError(reqParams);
+    }
+    return row;
+  };
 
-export const handleResponse = <T>({
-                                    data,
-                                  }: AxiosResponse<GraphqlResponse<T>>) => {
+export const handleResponse = <T>({ data }: AxiosResponse<GraphqlResponse<T>>) => {
   const errors = data.errors;
   if (errors && errors.length > 0) {
-    throw new GraphqlError("Request failed", errors);
+    throw new GraphqlError('Request failed', errors);
   }
   return data.data;
 };
-export const unpackSingleResults =
-  <T extends Object, K extends keyof T>(key: K) =>
-    (data: T) =>
-      data[key];
+export const unpackSingleResults = (key: string) => (data: any) => data[key];
 
 export class GraphqlError extends Error {
   constructor(message: string, public gqlErrors: GraphQLError[]) {
-    const msg = `${message} ${gqlErrors.map((e) => e.message).join("\n")}`;
+    const msg = `${message} ${gqlErrors.map(e => e.message).join('\n')}`;
     super(msg);
   }
 }
