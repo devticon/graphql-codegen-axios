@@ -1,111 +1,96 @@
-const fs = require("fs");
-const path = require("path");
-const { print } = require("graphql");
+const fs = require('fs');
+const path = require('path');
+const { print } = require('graphql');
+const { GraphQLList, GraphQLNonNull, GraphQLInputObjectType } = require('graphql/type');
+const { findUsageInputs } = require('./input');
+const { getVariablesFields } = require('./variables');
+const { getResultsFields } = require('./results');
+const { findScalars } = require('./scalar');
+const { renderType, renderQuery, renderSdk, renderScalars, renderEnum } = require('./render');
+const { findUsageEnums } = require('./enums');
+const { findUsageFragments } = require('./fragments');
 
-const getType = (name, operationType, type) => {
-  name = name.charAt(0).toUpperCase() + name.slice(1);
-  operationType =
-    operationType.charAt(0).toUpperCase() + operationType.slice(1);
-  switch (type) {
-    case "variables":
-      return `${name}${operationType}Variables`;
-    case "results":
-      return `${name}${operationType}`;
-  }
-};
+const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
 
-const functionsToString = (functions) => {
-  let str = "{";
-  for (let [name, body] of Object.entries(functions)) {
-    str += `${name}: ${body},\n`;
-  }
-  str += "}";
-  return str;
-};
-
-const getUsedFragments = (raw, allFragments, results = []) => {
-  const fragments = [...raw.matchAll(/\.\.\.(\w*)$/gm)]
-    .map(([_, name]) => name)
-    .map((name) => allFragments.find((d) => d.name.value === name));
-
-  for (let fragment of fragments) {
-    getUsedFragments(print(fragment), allFragments, results);
-  }
-  results.push(...fragments);
-  return results;
-};
-const printOperation = (ast, allFragments) => {
-  ast.directives = ast.directives.filter(
-    (d) => !["first", "firstOrFail"].includes(d.name.value)
-  );
-  const raw = print(ast)
-    .replace("@firstOrFail", "")
-    .replace("@first", "")
-    .replace("@nonNullable", "");
-
-  let fragments = getUsedFragments(raw, allFragments);
-  fragments = [...new Set(fragments)].map((f) => print(f));
-
-  return fragments.join("\n") + "\n" + raw;
-};
-
-const helpers = fs.readFileSync(path.join(__dirname, "helpers.ts"), "utf-8");
+const helpers = fs.readFileSync(path.join(__dirname, 'helpers.ts'), 'utf-8');
 module.exports = {
   plugin(schema, documents, config) {
-    const functions = {};
-    const queries = [];
-    const fragments = [];
+    try {
+      const functions = [];
+      const queries = [];
+      const fragments = findUsageFragments(documents, schema);
+      const types = [...fragments];
+      const scalars = findScalars(schema);
 
-    for (let { document } of documents) {
-      for (const definition of document.definitions) {
-        if (definition.kind === "FragmentDefinition") {
-          fragments.push(definition);
-        }
-      }
-    }
+      for (let { document } of documents) {
+        const inputs = findUsageInputs(document, schema);
+        types.push(...inputs);
 
-    for (let { document } of documents) {
-      for (const definition of document.definitions) {
-        const name = definition.name.value;
-
-        if (definition.kind !== "OperationDefinition") {
-          continue;
-        }
-        const variablesType = getType(name, definition.operation, "variables");
-        const resultsType = getType(name, definition.operation, "results");
-
-        queries.push(
-          `const ${name}RawQuery = \`${printOperation(
-            definition,
-            fragments
-          )}\`;`
-        );
-        let func = `(variables: ${variablesType}, config?: AxiosRequestConfig) => client.post<GraphqlResponse<${resultsType}>>("", {variables, query: ${name}RawQuery}, config).then(handleResponse)`;
-
-        if (definition.selectionSet.selections.length === 1) {
-          if (!["query", "mutation"].includes(definition.operation)) {
+        for (const definition of document.definitions) {
+          if (definition.kind !== 'OperationDefinition') {
             continue;
           }
-          const selection = definition.selectionSet.selections[0];
-          const directives = selection.directives.map((d) => d.name.value);
-          const propertyName = selection.name.value;
-          func += `.then(unpackSingleResults("${propertyName}"))\n`;
-          for (let directive of directives) {
-            if (directive === "nonNullable" || directive === "firstOrFail") {
-              func += `.then(${directive}({variables, query: ${name}RawQuery}))\n`;
-            } else {
-              func += `.then(${directive})\n`;
-            }
-          }
-        }
-        functions[name] = func;
-      }
-    }
+          const name = definition.name.value;
 
-    const sdk = `export const getSdk = (client: AxiosInstance) => (${functionsToString(
-      functions
-    )})`;
-    return [...queries, helpers, sdk].join("\n");
+          const results = {
+            name: capitalize(`${name}Results`),
+            fields: getResultsFields(definition, schema, document),
+          };
+          types.push(results);
+
+          const variables = {
+            name: capitalize(`${name}Variables`),
+            fields: getVariablesFields(definition, schema),
+          };
+          types.push(variables);
+
+          queries.push({
+            name,
+            ast: definition,
+            allFragments: fragments,
+          });
+
+          functions.push({
+            name,
+            results,
+            variables,
+            chain: [],
+          });
+        }
+
+        //   if (definition.selectionSet.selections.length === 1) {
+        //     if (!['query', 'mutation'].includes(definition.operation)) {
+        //       continue;
+        //     }
+        //     const selection = definition.selectionSet.selections[0];
+        //     const directives = selection.directives.map(d => d.name.value);
+        //     const propertyName = selection.name.value;
+        //     func += `.then(unpackSingleResults("${propertyName}"))\n`;
+        //     for (let directive of directives) {
+        //       if (directive === 'nonNullable' || directive === 'firstOrFail') {
+        //         func += `.then(${directive}({variables, query: ${name}RawQuery}))\n`;
+        //       } else {
+        //         func += `.then(${directive})\n`;
+        //       }
+        //     }
+        //   }
+        //   functions[name] = func;
+        // }
+      }
+
+      const enums = findUsageEnums(types, schema);
+      return [
+        helpers,
+        renderScalars(scalars),
+        ...enums.map(e => renderEnum(e)),
+        ...types.map(t => renderType(t)),
+        ...queries.map(q => renderQuery(q)),
+        renderSdk(functions),
+      ].join('\n');
+    } catch (e) {
+      console.log(e);
+      process.exit(1);
+    }
   },
   addToSchema: /* GraphQL */ `
     directive @first on OBJECT
