@@ -12,6 +12,7 @@ const renderType = ({ name, fields, union, isList, isNullable, gqlType }, config
     tsType += [...union.map(u => getName(u, 'fragment', config)), ''].join(' & ');
   }
   tsType += `{${renderTypeField(fields, config)}}`;
+  tsType = `(${tsType})`;
   if (isList) {
     tsType += '[]';
   }
