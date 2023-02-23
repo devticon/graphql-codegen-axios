@@ -25,4 +25,11 @@ const findEnumInType = (type, schema, ignore) => {
   }
   return enums;
 };
-module.exports = { findUsageEnums };
+
+const findEnumInSchema = (name, schema) => {
+  const type = schema._typeMap[name];
+  if (type instanceof GraphQLEnumType) {
+    return type;
+  }
+};
+module.exports = { findUsageEnums, findEnumInSchema };

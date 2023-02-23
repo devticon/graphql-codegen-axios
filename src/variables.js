@@ -1,5 +1,6 @@
 const { findInputInSchema } = require('./input');
 const { getGraphqlType } = require('./types');
+const { findEnumInSchema } = require('./enums');
 const getVariablesFields = (definition, schema) => {
   return definition.variableDefinitions.map(variable => ({
     name: variable.variable.name.value,
@@ -18,7 +19,7 @@ const getVariableType = (type, schema, isList = false, isNullable = true) => {
     return getVariableType(type.type, schema, isList, isNullable);
   }
   const typeName = type.name.value;
-  const isScalar = !findInputInSchema(typeName, schema);
+  const isScalar = !findInputInSchema(typeName, schema) && !findEnumInSchema(typeName, schema);
   return {
     type: type.type,
     isList,

@@ -1,6 +1,7 @@
 const { print } = require('graphql/index');
 const { getUsedFragments } = require('./query');
-const { GraphQLInputObjectType } = require('graphql/type');
+const { GraphQLInputObjectType, GraphQLEnumType } = require('graphql/type');
+const { get } = require('axios');
 
 const getName = (name, type, config) => {
   const suffix = config.suffix ? config.suffix[type] || '' : '';
@@ -36,8 +37,8 @@ const renderTypeField = (fields, config) => {
       } else if (inLine) {
         tsType += gqlType ? getName(typeName, gqlType, config) : typeName;
       } else {
-        if (type instanceof GraphQLInputObjectType) {
-          tsType += typeName;
+        if (type instanceof GraphQLInputObjectType || type instanceof GraphQLEnumType) {
+          tsType += gqlType ? getName(typeName, gqlType, config) : typeName;
         } else {
           tsType += `{${renderTypeField(fields)}}`;
         }
