@@ -2,6 +2,7 @@ const { print } = require('graphql/index');
 const { getUsedFragments } = require('./query');
 const { GraphQLInputObjectType, GraphQLEnumType } = require('graphql/type');
 const { get } = require('axios');
+const { capitalize } = require('./utils');
 
 const getName = (name, type, config) => {
   const suffix = config.suffix ? config.suffix[type] || '' : '';
@@ -90,7 +91,7 @@ const getScalarTsType = name => `Scalar["${name}"]`;
 const renderEnum = (e, config) => {
   let str = `export enum ${getName(e.name, 'enum', config)} {`;
   for (let { name, value } of e.values) {
-    str += `${name} = "${value}",`;
+    str += `${capitalize(name.toLowerCase())} = "${value}",`;
   }
   str += `};`;
   return str;

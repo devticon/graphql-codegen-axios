@@ -19,14 +19,14 @@ const { getFunctionChain, isSingleResultOperation } = require('./functions');
 const { capitalize } = require('./utils');
 
 const helpers = fs.readFileSync(path.join(__dirname, 'helpers.ts'), 'utf-8');
-const directives = ` directive @first on OBJECT
-    directive @firstOrFail on OBJECT
-    directive @singleResult on OBJECT
-    directive @nonNullable on OBJECT`;
+const directives = `directive @first on FIELD
+directive @firstOrFail on FIELD
+directive @singleResult on QUERY | MUTATION
+directive @nonNullable on FIELD`;
 module.exports = {
   plugin(schema, documents, config) {
     try {
-      fs.writeFileSync('directives.graphql', directives);
+      fs.writeFileSync(path.join(config.directivesFilePath || '', 'directives.graphql'), directives);
       const functions = [];
       const queries = [];
       const inputs = findUsageInputs(documents, schema);
