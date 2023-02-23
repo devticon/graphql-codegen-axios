@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { findUsageInputs } = require('./input');
 const { getVariablesFields } = require('./variables');
-const { getResultsFields, getResultType } = require('./results');
+const { getResultType } = require('./results');
 const { findScalars } = require('./scalar');
 const {
   renderType,
@@ -19,9 +19,14 @@ const { getFunctionChain, isSingleResultOperation } = require('./functions');
 const { capitalize } = require('./utils');
 
 const helpers = fs.readFileSync(path.join(__dirname, 'helpers.ts'), 'utf-8');
+const directives = ` directive @first on OBJECT
+    directive @firstOrFail on OBJECT
+    directive @singleResult on OBJECT
+    directive @nonNullable on OBJECT`;
 module.exports = {
   plugin(schema, documents, config) {
     try {
+      fs.writeFileSync('directives.graphql', directives);
       const functions = [];
       const queries = [];
       const inputs = findUsageInputs(documents, schema);
@@ -35,7 +40,7 @@ module.exports = {
             continue;
           }
           const name = definition.name.value;
-          const useSingleResults = isSingleResultOperation(definition);
+          const useSingleResults = isSingleResultOperation(definition, config);
 
           const results = getResultType(definition, schema, document, useSingleResults);
           types.push(results);
@@ -85,9 +90,5 @@ module.exports = {
       process.exit(1);
     }
   },
-  addToSchema: /* GraphQL */ `
-    directive @first on OBJECT
-    directive @firstOrFail on OBJECT
-    directive @nonNullable on OBJECT
-  `,
+  addToSchema: directives,
 };

@@ -33,7 +33,7 @@ const nonNullable = (key: string, reqParams: GraphqlRequestParams) => (data: any
   return data;
 };
 
-export const handleResponse = <T>({ data }: AxiosResponse<GraphqlResponse<T>>) => {
+export const handleResponse = ({ data }: AxiosResponse<GraphqlResponse<any>>): any => {
   const errors = data.errors;
   if (errors && errors.length > 0) {
     throw new GraphqlError('Request failed', errors);

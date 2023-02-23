@@ -21,6 +21,11 @@ const getFunctionChain = (operation, useSingleResults) => {
   return chain;
 };
 
-const isSingleResultOperation = operation => operation.selectionSet.selections.length === 1;
+const isSingleResultOperation = (operation, config) => {
+  if (config.autoSingleResult === undefined || config.autoSingleResult === true) {
+    return operation.selectionSet.selections.length === 1;
+  }
+  return operation.directives.some(d => d.name.value === 'singleResult');
+};
 
 module.exports = { getFunctionChain, isSingleResultOperation };

@@ -36,6 +36,7 @@ const getField = (parent, field, schema, document) => {
     ...type,
     fields,
     union,
+    alias: field.alias?.value,
   };
 };
 

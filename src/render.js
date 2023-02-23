@@ -27,7 +27,7 @@ const renderType = ({ name, fields, union, isList, isNullable, gqlType }, config
 const renderHeader = text => `/** \n ${text} \n **/`;
 const renderTypeField = (fields, config) => {
   return fields
-    .map(({ isList, isNullable, typeName, name, fields, isScalar, union, type, inLine, gqlType }) => {
+    .map(({ isList, isNullable, typeName, name, fields, isScalar, union, type, inLine, gqlType, alias }) => {
       let tsType = '';
       if (union && union.length) {
         tsType += [...union.map(u => getName(u, 'fragment', config)), ''].join(' & ');
@@ -40,7 +40,7 @@ const renderTypeField = (fields, config) => {
         if (type instanceof GraphQLInputObjectType || type instanceof GraphQLEnumType) {
           tsType += gqlType ? getName(typeName, gqlType, config) : typeName;
         } else {
-          tsType += `{${renderTypeField(fields)}}`;
+          tsType += `{${renderTypeField(fields, config)}}`;
         }
       }
       tsType = `(${tsType})`;
@@ -50,7 +50,7 @@ const renderTypeField = (fields, config) => {
       if (isNullable) {
         tsType = `Nullable<${tsType}>`;
       }
-      return `${name}${isNullable ? '?' : ''}: ${tsType}`;
+      return `${alias || name}${isNullable ? '?' : ''}: ${tsType}`;
     })
     .join(',\n');
 };
@@ -72,7 +72,11 @@ const renderFunction = ({ name, variables, results, chain }) => {
 };
 
 const renderQuery = ({ name, ast, allFragments }) => {
-  const raw = print(ast).replace('@firstOrFail', '').replace('@first', '').replace('@nonNullable', '');
+  const raw = print(ast)
+    .replace(/@firstOrFail/g, '')
+    .replace(/@first/g, '')
+    .replace(/@nonNullable/g, '')
+    .replace(/@singleResult/g, '');
 
   let fragments = getUsedFragments(raw, allFragments);
   fragments = [...new Set(fragments)].map(f => `\${${f.name}FragmentQuery}`);
