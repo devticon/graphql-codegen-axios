@@ -7,7 +7,8 @@ const findUsageInputs = (document, schema) => {
       continue;
     }
     for (const variableDefinition of definition.variableDefinitions) {
-      const name = variableDefinition.type.name.value;
+      const type = unpackVariableType(variableDefinition.type);
+      const name = type.name.value;
       const input = findInputInSchema(name, schema);
       if (input) {
         inputs.push(input);
@@ -56,6 +57,16 @@ const unpackInputType = type => {
   }
   if (type instanceof GraphQLList) {
     return unpackInputType(type.ofType);
+  }
+  return type;
+};
+
+const unpackVariableType = type => {
+  if (type.kind === 'ListType') {
+    return unpackVariableType(type.type);
+  }
+  if (type.kind === 'NonNullType') {
+    return unpackVariableType(type.type);
   }
   return type;
 };
