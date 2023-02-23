@@ -16,14 +16,12 @@ module.exports = {
     try {
       const functions = [];
       const queries = [];
+      const inputs = findUsageInputs(documents, schema);
       const fragments = findUsageFragments(documents, schema);
-      const types = [...fragments];
+      const types = [];
       const scalars = findScalars(schema);
 
       for (let { document } of documents) {
-        const inputs = findUsageInputs(document, schema);
-        types.push(...inputs);
-
         for (const definition of document.definitions) {
           if (definition.kind !== 'OperationDefinition') {
             continue;
@@ -76,7 +74,7 @@ module.exports = {
         // }
       }
 
-      const enums = findUsageEnums(types, schema);
+      const enums = findUsageEnums([...types, ...inputs, ...fragments], schema);
       return [
         renderHeader('HELPERS'),
         helpers,
@@ -84,6 +82,10 @@ module.exports = {
         renderScalars(scalars),
         renderHeader('Enum'),
         ...enums.map(e => renderEnum(e)),
+        renderHeader('FRAGMENTS'),
+        ...fragments.map(t => renderType(t)),
+        renderHeader('INPUTS'),
+        ...inputs.map(t => renderType(t)),
         renderHeader('TYPES'),
         ...types.map(t => renderType(t)),
         renderHeader('QUERIES'),

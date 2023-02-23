@@ -1,18 +1,20 @@
 const { GraphQLInputObjectType, GraphQLNonNull, GraphQLList } = require('graphql/type');
 const { getGraphqlTypeInfo } = require('./types');
-const findUsageInputs = (document, schema) => {
+const findUsageInputs = (documents, schema) => {
   const inputs = [];
-  for (let definition of document.definitions) {
-    if (definition.kind !== 'OperationDefinition') {
-      continue;
-    }
-    for (const variableDefinition of definition.variableDefinitions) {
-      const type = unpackVariableType(variableDefinition.type);
-      const name = type.name.value;
-      const input = findInputInSchema(name, schema);
-      if (input) {
-        inputs.push(input);
-        inputs.push(...findInputDependencies(input, schema, inputs));
+  for (let { document } of documents) {
+    for (let definition of document.definitions) {
+      if (definition.kind !== 'OperationDefinition') {
+        continue;
+      }
+      for (const variableDefinition of definition.variableDefinitions) {
+        const type = unpackVariableType(variableDefinition.type);
+        const name = type.name.value;
+        const input = findInputInSchema(name, schema);
+        if (input && !inputs.includes(input)) {
+          inputs.push(input);
+          inputs.push(...findInputDependencies(input, schema, inputs));
+        }
       }
     }
   }

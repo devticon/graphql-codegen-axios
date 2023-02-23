@@ -2,7 +2,11 @@ const { GraphQLEnumType } = require('graphql/type');
 const findUsageEnums = (types, schema) => {
   const enums = [];
   for (let type of types) {
-    enums.push(...findEnumInType(type, schema, enums));
+    for (let e of findEnumInType(type, schema, enums)) {
+      if (!enums.includes(e)) {
+        enums.push(e);
+      }
+    }
   }
 
   return enums.map(e => ({
