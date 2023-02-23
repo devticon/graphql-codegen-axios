@@ -66,7 +66,7 @@ module.exports = {
         renderHeader('HELPERS'),
         helpers,
         renderHeader('Scalars'),
-        renderScalars(scalars),
+        renderScalars(scalars, config),
         renderHeader('Enum'),
         ...enums.map(e => renderEnum(e, config)),
         renderHeader('FRAGMENTS'),

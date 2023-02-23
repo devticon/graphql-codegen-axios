@@ -25,15 +25,13 @@ const firstOrFail = (key: string, reqParams: GraphqlRequestParams) => (data: any
   return data;
 };
 
-const nonNullable =
-  <T>(reqParams: GraphqlRequestParams) =>
-  (data: T) => {
-    const row = data;
-    if (!row) {
-      throw new QueryNoResultsError(reqParams);
-    }
-    return row;
-  };
+const nonNullable = (key: string, reqParams: GraphqlRequestParams) => (data: any) => {
+  const row = data[key];
+  if (!row) {
+    throw new QueryNoResultsError(reqParams);
+  }
+  return data;
+};
 
 export const handleResponse = <T>({ data }: AxiosResponse<GraphqlResponse<T>>) => {
   const errors = data.errors;

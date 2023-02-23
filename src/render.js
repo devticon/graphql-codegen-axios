@@ -3,7 +3,7 @@ const { getUsedFragments } = require('./query');
 const { GraphQLInputObjectType } = require('graphql/type');
 
 const getName = (name, type, config) => {
-  const suffix = config.suffix ? config.suffix[type] : '';
+  const suffix = config.suffix ? config.suffix[type] || '' : '';
   return `${name}${suffix}`;
 };
 const renderType = ({ name, fields, union, isList, isNullable, gqlType }, config) => {
@@ -47,7 +47,7 @@ const renderTypeField = (fields, config) => {
       if (isNullable) {
         tsType = `Nullable<${tsType}>`;
       }
-      return `${name}: ${tsType}`;
+      return `${name}${isNullable ? '?' : ''}: ${tsType}`;
     })
     .join(',\n');
 };
@@ -92,13 +92,13 @@ const renderEnum = (e, config) => {
 const renderFragment = fragment => {
   return `export const ${fragment.name}FragmentQuery = \`${print(fragment.type)}\`;`;
 };
-const renderScalars = (scalars, map = {}) => {
-  map = {
+const renderScalars = (scalars, config = {}) => {
+  const map = {
     String: 'string',
     Boolean: 'boolean',
     Int: 'number',
     Float: 'number',
-    ...map,
+    ...(config.scalars || {}),
   };
   return `export type Scalar = {${scalars
     .map(({ name }) => {
