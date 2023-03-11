@@ -1,8 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const { findUsageInputs } = require('./input');
-const { getVariablesFields } = require('./variables');
-const { getResultType } = require('./results');
+import * as fs from 'fs';
+import * as path from 'path';
+import { findUsageInputs } from './input';
+import { getVariablesFields } from './variables';
+import { getResultType } from './results';
+import { CodegenPlugin, Enum, ObjectType, Query, SdkFunction } from './_types';
+
 const { findScalars } = require('./scalar');
 const {
   renderType,
@@ -23,14 +25,16 @@ const directives = `directive @first on FIELD
 directive @firstOrFail on FIELD
 directive @singleResult on QUERY | MUTATION
 directive @nonNullable on FIELD`;
-module.exports = {
+
+const plugin: CodegenPlugin = {
   plugin(schema, documents, config) {
     try {
       fs.writeFileSync(path.join(config.directivesFilePath || '', 'directives.graphql'), directives);
-      const functions = [];
-      const queries = [];
+
+      const functions: SdkFunction[] = [];
+      const queries: Query[] = [];
       const inputs = findUsageInputs(documents, schema);
-      const fragments = findUsageFragments(documents, schema);
+      const fragments: ObjectType[] = findUsageFragments(documents, schema);
       const types = [];
       const scalars = findScalars(schema);
 
@@ -45,9 +49,11 @@ module.exports = {
           const results = getResultType(definition, schema, document, useSingleResults);
           types.push(results);
 
-          const variables = {
+          const variables: ObjectType = {
             name: capitalize(`${name}Variables`),
             fields: getVariablesFields(definition, schema),
+            union: [],
+            gqlType: 'type',
           };
           types.push(variables);
 
@@ -66,7 +72,7 @@ module.exports = {
         }
       }
 
-      const enums = findUsageEnums([...types, ...inputs, ...fragments], schema);
+      const enums: Enum[] = findUsageEnums([...types, ...inputs, ...fragments], schema);
       return [
         renderHeader('HELPERS'),
         helpers,
@@ -92,3 +98,5 @@ module.exports = {
   },
   addToSchema: directives,
 };
+
+export default plugin;

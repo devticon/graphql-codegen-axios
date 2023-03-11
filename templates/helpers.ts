@@ -44,8 +44,7 @@ export const unpackSingleResults = (key: string) => (data: any) => data[key];
 
 export class GraphqlError extends Error {
   constructor(message: string, public gqlErrors: GraphQLError[]) {
-    const msg = `${message} ${gqlErrors.map(e => e.message).join('\n')}`;
-    super(msg);
+    super(`${message} ${gqlErrors.map(e => e.message).join('\n')}`);
   }
 }
 

@@ -1,12 +1,13 @@
-const {
-  GraphQLList,
-  GraphQLNonNull,
-  GraphQLScalarType,
-  GraphQLEnumType,
-  GraphQLInputObjectType,
-  GraphQLObjectType,
-} = require('graphql/type');
-const getGraphqlTypeInfo = (type, isList = false, isNullable = true) => {
+import { GraphQLEnumType, GraphQLInputObjectType, GraphQLList, GraphQLNonNull, GraphQLScalarType } from 'graphql/type';
+import { GraphQLInputType, GraphQLOutputType, GraphQLType } from 'graphql/type/definition';
+import { ObjectTypeField } from './_types';
+import { DirectiveNode } from 'graphql/language/ast';
+
+export const getGraphqlTypeInfo = (
+  type: GraphQLType,
+  isList = false,
+  isNullable = true,
+): Omit<ObjectTypeField, 'name' | 'alias' | 'union' | 'inLine' | 'fields'> => {
   if (type instanceof GraphQLList) {
     isList = true;
     return getGraphqlTypeInfo(type.ofType, isList, isNullable);
@@ -19,7 +20,7 @@ const getGraphqlTypeInfo = (type, isList = false, isNullable = true) => {
   return { type, isList, isNullable, typeName: type.name, isScalar, gqlType: getGraphqlType(type) };
 };
 
-const getGraphqlType = type => {
+const getGraphqlType = (type: GraphQLOutputType | GraphQLInputType) => {
   if (type instanceof GraphQLEnumType) {
     return 'enum';
   }
@@ -27,7 +28,10 @@ const getGraphqlType = type => {
     return 'input';
   }
 };
-const assignDirectivesToType = (typeInfo, directives) => {
+export const assignDirectivesToType = (
+  typeInfo: Omit<ObjectTypeField, 'name' | 'alias' | 'union' | 'inLine' | 'fields'>,
+  directives: readonly DirectiveNode[],
+) => {
   const newType = { ...typeInfo };
   for (let directive of directives) {
     switch (directive.name.value) {
@@ -46,4 +50,3 @@ const assignDirectivesToType = (typeInfo, directives) => {
   }
   return newType;
 };
-module.exports = { getGraphqlTypeInfo, assignDirectivesToType, getGraphqlType };
