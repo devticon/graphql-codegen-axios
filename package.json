@@ -1,6 +1,6 @@
 {
   "name": "@devticon-os/graphql-codegen-axios",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "license": "MIT",
   "main": "lib/index.js",
   "repository": "https://github.com/devticon/graphql-codegen-axios",
@@ -22,11 +22,16 @@
     "graphql": "^16.6.0"
   },
   "devDependencies": {
+    "@cloudticon/functions": "^1.2.12",
+    "@types/js-yaml": "^4.0.5",
     "@types/node": "^18.15.0",
     "axios": "^1.3.4",
     "graphql": "^16.6.0",
     "prettier": "^2.8.4",
     "ts-node": "^10.9.1",
     "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
   }
 }
