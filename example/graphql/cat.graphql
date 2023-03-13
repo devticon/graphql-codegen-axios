@@ -1,0 +1,9 @@
+fragment Cat on Cat {
+  age @required
+}
+
+query getCat {
+  getCats @first {
+    ...Cat
+  }
+}

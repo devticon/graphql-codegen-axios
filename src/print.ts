@@ -85,7 +85,11 @@ export const printFragmentType = (fragment: FragmentDefinitionNode, schema: Grap
 };
 
 export const printFragmentGql = (fragment: FragmentDefinitionNode) => {
-  return `const ${fragment.name.value}FragmentQuery = \`${print(fragment)}\``;
+  let query = print(fragment);
+  for (let pluginDirective of pluginDirectives) {
+    query = query.replace(new RegExp('@' + pluginDirective, 'g'), '');
+  }
+  return `const ${fragment.name.value}FragmentQuery = \`${query}\``;
 };
 
 export const printInput = (input: GraphQLInputObjectType, config: Config) => {

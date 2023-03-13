@@ -34,7 +34,7 @@ export const findUsageOperation = (documents: CodegenDocuments, schema: GraphQLS
           throw new Error('subscription operation is not supported');
         }
 
-        const directives = findDirectives(definition.selectionSet.selections);
+        const directives = findDirectives(definition.selectionSet.selections, allFragments);
         if (
           config.autoSingleResult !== false &&
           definition.selectionSet.selections.length === 1 &&
@@ -56,19 +56,6 @@ export const findUsageOperation = (documents: CodegenDocuments, schema: GraphQLS
           isList: false,
           ...selectionSetToTsType(root, definition.selectionSet.selections, config),
         };
-        for (let directive of directives) {
-          switch (directive.name) {
-            case 'first':
-              changeTsTypeField(resultsType, directive.path, { isList: false });
-              break;
-            case 'firstOrFail':
-              changeTsTypeField(resultsType, directive.path, { isList: false, isNullable: false });
-              break;
-            case 'required':
-              changeTsTypeField(resultsType, directive.path, { isNullable: false });
-              break;
-          }
-        }
         const singleResult = directives.find(d => d.name === 'singleResult');
 
         if (singleResult) {
@@ -111,9 +98,18 @@ export const findUsageOperation = (documents: CodegenDocuments, schema: GraphQLS
   return operations;
 };
 
-const findDirectives = (selections: readonly SelectionNode[], key = '') => {
+const findDirectives = (selections: readonly SelectionNode[], fragments: FragmentDefinitionNode[], key = '') => {
   const directives: Directive[] = [];
   for (let selection of selections) {
+    if (selection.kind === Kind.FRAGMENT_SPREAD) {
+      const fragmentName = selection.name.value;
+      const fragment = fragments.find(f => f.name.value === fragmentName);
+      if (!fragment) {
+        throw new Error(`Cannot find fragment: ${fragmentName}`);
+      }
+      directives.push(...findDirectives(fragment.selectionSet.selections, fragments, key));
+    }
+
     if (selection.kind === Kind.FIELD) {
       const path = key + selection.name.value;
       for (let directive of selection.directives) {
@@ -131,7 +127,7 @@ const findDirectives = (selections: readonly SelectionNode[], key = '') => {
         }
       }
       if (selection.selectionSet?.selections.length) {
-        directives.push(...findDirectives(selection.selectionSet.selections, path + '.'));
+        directives.push(...findDirectives(selection.selectionSet.selections, fragments, path + '.'));
       }
     }
   }
