@@ -1,0 +1,5 @@
+mutation createPaymentEvent($input: PaymentEventInsertInput!) {
+  insertPaymentEventOne(object: $input) {
+    id
+  }
+}

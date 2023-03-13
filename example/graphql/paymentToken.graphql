@@ -1,0 +1,16 @@
+fragment PaymentToken on PaymentToken {
+  id
+  token
+  cardId
+}
+
+mutation createPaymentToken($input: PaymentTokenInsertInput!) {
+  insertPaymentTokenOne(object: $input) @nonNullable {
+    ...PaymentToken
+  }
+}
+query getPaymentTokenById($id: uuid!) {
+  paymentTokenByPk(id: $id) @nonNullable {
+    ...PaymentToken
+  }
+}

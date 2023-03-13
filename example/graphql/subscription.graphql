@@ -1,0 +1,100 @@
+fragment Subscription on Subscription {
+  id
+  customerId
+  startDate
+  endDate
+  title
+  firstBillingDate
+  lastBillingDate
+  currentBillingDate
+  currency
+  interval
+  customInterval
+  projectId
+  paymentInAdvance
+  paymentMethod
+  paymentTokenId
+  webhookUrl
+  eventId
+}
+fragment SubscriptionForProcessing on Subscription {
+  ...Subscription
+  items {
+    ...SubscriptionItem
+  }
+}
+fragment SubscriptionItem on SubscriptionItem {
+  id
+  productId
+  price
+  name
+  details
+  createdAt
+  deletedAt
+  imageUrl
+  qty
+  pauses {
+    startsAt
+    endsAt
+    deletedAt
+  }
+}
+fragment SubscriptionItemMinimal on SubscriptionItem {
+  id
+  price
+  qty
+}
+mutation updateSubscriptionById ($id: uuid!, $input: SubscriptionSetInput!) {
+  updateSubscriptionByPk(pk_columns: {id: $id} _set: $input) {
+    id
+  }
+}
+
+query findSubscriptionForProcessing($id: uuid!) {
+  SubscriptionByPk(id: $id) {
+    ...SubscriptionForProcessing
+  }
+}
+
+query getSubscriptionByIdAndProjectId($id: uuid! $projectId: uuid!) {
+  Subscription(where: {id: {_eq: $id}, projectId: {_eq: $projectId}} limit: 1) @firstOrFail {
+    ...Subscription
+  }
+}
+
+query getSubscriptionItemsByProductId($productId: String! $projectId: uuid!) {
+  subscriptionItem(where: {productId: {_eq: $productId} subscription: {projectId: {_eq: $projectId}}}) {
+    ...SubscriptionItem
+  }
+}
+
+query getMinimalSubscriptionItemByIdAndProjectId($id: uuid! $projectId: uuid!) {
+  subscriptionItem(where: {id: {_eq: $id} subscription: {projectId: {_eq: $projectId}}}) @firstOrFail {
+    ...SubscriptionItemMinimal
+  }
+}
+
+mutation createSubscriptionItemPrices($input: [SubscriptionItemPriceInsertInput!]!) {
+  insertSubscriptionItemPrice(objects: $input) {
+   affected_rows
+  }
+}
+
+mutation updateSubscriptionItem(
+  $id:uuid!
+  $item: SubscriptionItemSetInput!
+  $price: Int!
+  $qty: Int!
+  $skipPrice: Boolean!
+) {
+  updateSubscriptionItemByPk(pk_columns: {id: $id} _set: $item) {
+    id
+  }
+  insertSubscriptionItemPriceOne(object: {
+    subscriptionItemId: $id
+    price: $price
+    qty: $qty
+  }) @skip(if: $skipPrice) {
+    id
+  }
+}

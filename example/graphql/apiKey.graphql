@@ -1,0 +1,7 @@
+query getApiKey ($key: String!) {
+  apiKey(where: {key: {_eq: $key}}) @firstOrFail {
+    id
+    projectId
+    key
+  }
+}
