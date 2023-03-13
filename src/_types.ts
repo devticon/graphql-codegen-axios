@@ -1,49 +1,29 @@
 import { DocumentNode, OperationDefinitionNode } from 'graphql/language/ast';
-import { GraphQLObjectType, GraphQLSchema } from 'graphql/type';
-import { GraphQLType } from 'graphql/type/definition';
+import { GraphQLSchema } from 'graphql/type';
 
-export type ObjectType = {
+export type NamedTsType = TsType & { name: string };
+export type NamedTsObjectType = TsTypeObject & { name: string };
+export type TsTypedBase = {
   name: string;
-  type?: any;
-  fields: ObjectTypeField[];
-  union: string[];
-  gqlType: string;
-};
-
-export type ObjectTypeField = {
-  name: string;
-  alias: string;
-  fields: any[];
-  union: string[];
   isList: boolean;
   isNullable: boolean;
-  gqlType: any;
-  typeName: string;
-  type?: GraphQLType;
-  isScalar: boolean;
-  inLine: boolean;
+  unions?: string[];
 };
 
-export type SdkFunction = {
-  name: string;
-  variables: ObjectType;
-  results: ObjectType;
-  chain: string[];
-};
-
-export type Enum = {
-  name: string;
-  values: { name: string; value: string }[];
-};
-
+export type TsTypeInLine = TsTypedBase & { kind: 'inLine'; type: string };
+export type TsTypeObject = TsTypedBase & { kind: 'object'; fields: TsType[] };
+export type TsType = TsTypeInLine | TsTypeObject;
 export type Query = {
   name: string;
   ast: OperationDefinitionNode;
-  allFragments: ObjectType[];
+  allFragments: TsType[];
 };
 export type Config = {
   autoSingleResult?: boolean;
-  directivesFilePath?: string;
+  prettier?: boolean;
+  emitDirectives?: string | boolean;
+  emitSchema?: string | boolean;
+
   suffix?: {
     fragment?: string;
     input?: string;
@@ -56,3 +36,21 @@ export type CodegenPlugin = {
   plugin: (schema: GraphQLSchema, documents: CodegenDocuments, config: Config) => string | Promise<string>;
   addToSchema?: string;
 };
+
+export type Operation = {
+  name: string;
+  definition: OperationDefinitionNode;
+  singleResultKey?: string;
+  variables?: NamedTsObjectType;
+  results: NamedTsObjectType;
+  fragments: string[];
+  directives: Directive[];
+};
+
+export type Directive = {
+  name: string;
+  path: string;
+  args: Record<string, string>;
+};
+
+export type FieldsMap = Record<string, TsTypedBase & { fields: FieldsMap }>;

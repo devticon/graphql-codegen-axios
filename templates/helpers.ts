@@ -10,37 +10,73 @@ type GraphqlResponse<T> = {
 
 type GraphqlRequestParams = {
   query: string;
-  variables: any;
+  variables?: any;
 };
 const first = (key: string) => (data: any) => {
   data[key] = data[key][0];
   return data;
 };
 
-const firstOrFail = (key: string, reqParams: GraphqlRequestParams) => (data: any) => {
+const firstOrFail = (key: string) => (data: any) => {
   data[key] = (data as any)[key][0];
   if (!data[key]) {
-    throw new QueryNoResultsError(reqParams);
+    throw {
+      message: `Empty list for ${key} `,
+      code: 'EMPTY_LIST',
+    };
   }
   return data;
 };
 
-const nonNullable = (key: string, reqParams: GraphqlRequestParams) => (data: any) => {
-  const row = data[key];
-  if (!row) {
-    throw new QueryNoResultsError(reqParams);
+const required = (path: string) => (data: any) => {
+  const p = path.split('.');
+  let d: any = data;
+  while (p.length) {
+    const k = p.shift();
+    const f = d[k!];
+    if (Array.isArray(f)) {
+      for (let i of f) {
+        required(p.join('.'))(i);
+      }
+    } else if (p.length > 0) {
+      d = f;
+    } else if (!f) {
+      throw {
+        message: `missing required field: ${path}`,
+        code: 'MISSING_FIELD',
+      };
+    }
   }
   return data;
 };
 
-export const handleResponse = ({ data }: AxiosResponse<GraphqlResponse<any>>): any => {
-  const errors = data.errors;
-  if (errors && errors.length > 0) {
-    throw new GraphqlError('Request failed', errors);
-  }
-  return data.data;
-};
-export const unpackSingleResults = (key: string) => (data: any) => data[key];
+const execute = (
+  client: AxiosInstance,
+  body: GraphqlRequestParams,
+  functions: ((data: any) => any)[],
+  config?: AxiosRequestConfig,
+) =>
+  client.post('', body, config).then(({ data }: AxiosResponse<GraphqlResponse<any>>) => {
+    const errors = data.errors;
+    if (errors && errors.length > 0) {
+      throw new GraphqlError('Request failed', errors);
+    }
+    let d = data.data;
+    for (let func of functions) {
+      try {
+        d = func(d);
+      } catch (e: any) {
+        if (e.code) {
+          throw new QueryError(e.message, e.code, body);
+        } else {
+          throw e;
+        }
+      }
+    }
+    return d;
+  });
+
+export const singleResult = (key: string) => (data: any) => data[key];
 
 export class GraphqlError extends Error {
   constructor(message: string, public gqlErrors: GraphQLError[]) {
@@ -48,11 +84,11 @@ export class GraphqlError extends Error {
   }
 }
 
-export class QueryNoResultsError extends Error {
+export class QueryError extends Error {
   query: string;
   variables: any;
-  constructor(params: GraphqlRequestParams) {
-    super(`Query has no results`);
+  constructor(message: string, code: string, params: GraphqlRequestParams) {
+    super(message);
     this.query = params.query;
     this.variables = params.variables;
   }

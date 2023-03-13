@@ -1,36 +1,51 @@
-import { GraphQLEnumType, GraphQLSchema } from 'graphql/type';
-import { Enum, ObjectType } from './_types';
+import {
+  assertEnumType,
+  assertObjectType,
+  GraphQLEnumType,
+  GraphQLInputObjectType,
+  GraphQLSchema,
+  isEnumType,
+} from 'graphql/type';
+import { getNamedType } from 'graphql/type/definition';
+import { FragmentDefinitionNode } from 'graphql/language/ast';
+import { Kind } from 'graphql/language';
+import { Operation } from './_types';
 
-export const findUsageEnums = (types: ObjectType[], schema: GraphQLSchema): Enum[] => {
-  const enums: GraphQLEnumType[] = [];
-  for (let type of types) {
-    for (let e of findEnumInType(type, schema, enums)) {
-      if (!enums.includes(e)) {
-        enums.push(e);
+export const findUsageEnums = (
+  inputs: GraphQLInputObjectType[],
+  fragments: FragmentDefinitionNode[],
+  operations: Operation[],
+  schema: GraphQLSchema,
+): GraphQLEnumType[] => {
+  const enums = new Set<GraphQLEnumType>();
+  for (let input of inputs) {
+    for (let field of Object.values(input.getFields())) {
+      if (isEnumType(getNamedType(field.type))) {
+        enums.add(assertEnumType(getNamedType(field.type)));
       }
     }
   }
-
-  return enums.map(e => ({
-    name: e.name,
-    values: e.getValues().map(({ name, value }) => ({ name, value })),
-  }));
-};
-
-export const findEnumInSchema = (name: string, schema: GraphQLSchema) => {
-  const type = schema.getType(name);
-  if (type instanceof GraphQLEnumType) {
-    return type;
-  }
-};
-
-const findEnumInType = (type: ObjectType, schema: GraphQLSchema, ignore: GraphQLEnumType[]) => {
-  const enums = [];
-  for (let field of type.fields) {
-    const type = schema.getType(field.typeName);
-    if (type instanceof GraphQLEnumType && !ignore.includes(type)) {
-      enums.push(type);
+  for (let fragment of fragments) {
+    const parent = assertObjectType(schema.getType(fragment.typeCondition.name.value));
+    for (let selection of fragment.selectionSet.selections) {
+      if (selection.kind === Kind.FIELD) {
+        const parentField = parent.getFields()[selection.name.value];
+        if (isEnumType(getNamedType(parentField.type))) {
+          enums.add(assertEnumType(getNamedType(parentField.type)));
+        }
+      }
     }
   }
-  return enums;
+  for (let operation of operations) {
+    if (operation.variables && operation.variables.kind === 'object')
+      for (let field of operation.variables.fields) {
+        if (field.kind === 'inLine') {
+          const type = schema.getType(field.type);
+          if (isEnumType(getNamedType(type))) {
+            enums.add(assertEnumType(getNamedType(type)));
+          }
+        }
+      }
+  }
+  return [...enums];
 };

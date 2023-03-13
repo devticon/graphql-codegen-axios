@@ -1,96 +1,64 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { findUsageInputs } from './input';
-import { getVariablesFields } from './variables';
-import { getResultType } from './results';
-import { CodegenPlugin, Enum, ObjectType, Query, SdkFunction } from './_types';
+import { CodegenPlugin, Config } from './_types';
+import {
+  printCreateSdkFunction,
+  printEnum,
+  printFragmentGql,
+  printFragmentType,
+  printHelpers,
+  printInput,
+  printOperationTypes,
+  printScalars,
+} from './print';
+import { findUsageEnums } from './enums';
+import { findUsageFragments } from './fragments';
+import { findUsageOperation, pluginDirectives } from './operation';
+import { findScalars } from './scalar';
+import { runPrettierIfExists } from './prettier';
+import { printSchema } from 'graphql/utilities';
 
-const { findScalars } = require('./scalar');
-const {
-  renderType,
-  renderQuery,
-  renderSdk,
-  renderScalars,
-  renderEnum,
-  renderHeader,
-  renderFragment,
-} = require('./render');
-const { findUsageEnums } = require('./enums');
-const { findUsageFragments } = require('./fragments');
-const { getFunctionChain, isSingleResultOperation } = require('./functions');
-const { capitalize } = require('./utils');
-
-const helpers = fs.readFileSync(path.join(__dirname, 'helpers.ts'), 'utf-8');
-const directives = `directive @first on FIELD
-directive @firstOrFail on FIELD
-directive @singleResult on QUERY | MUTATION
-directive @nonNullable on FIELD`;
-
+const configDefaults: Partial<Config> = {
+  autoSingleResult: true,
+  prettier: true,
+};
+const directives = pluginDirectives.map(d => `directive @${d} on FIELD`).join('\n');
 const plugin: CodegenPlugin = {
   plugin(schema, documents, config) {
     try {
-      fs.writeFileSync(path.join(config.directivesFilePath || '', 'directives.graphql'), directives);
-
-      const functions: SdkFunction[] = [];
-      const queries: Query[] = [];
-      const inputs = findUsageInputs(documents, schema);
-      const fragments: ObjectType[] = findUsageFragments(documents, schema);
-      const types = [];
-      const scalars = findScalars(schema);
-
-      for (let { document } of documents) {
-        for (const definition of document.definitions) {
-          if (definition.kind !== 'OperationDefinition') {
-            continue;
-          }
-          const name = definition.name.value;
-          const useSingleResults = isSingleResultOperation(definition, config);
-
-          const results = getResultType(definition, schema, document, useSingleResults);
-          types.push(results);
-
-          const variables: ObjectType = {
-            name: capitalize(`${name}Variables`),
-            fields: getVariablesFields(definition, schema),
-            union: [],
-            gqlType: 'type',
-          };
-          types.push(variables);
-
-          queries.push({
-            name,
-            ast: definition,
-            allFragments: fragments,
-          });
-
-          functions.push({
-            name,
-            results,
-            variables,
-            chain: getFunctionChain(definition, useSingleResults),
-          });
-        }
+      config = {
+        ...configDefaults,
+        ...config,
+      };
+      if (config.emitDirectives) {
+        const directivesPath = typeof config.emitDirectives === 'string' ? config.emitDirectives : 'directives.graphql';
+        fs.writeFileSync(path.join(directivesPath), directives);
+      }
+      if (config.emitSchema) {
+        const schemaPath = typeof config.emitSchema === 'string' ? config.emitSchema : 'schema.graphql';
+        fs.writeFileSync(path.join(schemaPath), printSchema(schema));
       }
 
-      const enums: Enum[] = findUsageEnums([...types, ...inputs, ...fragments], schema);
-      return [
-        renderHeader('HELPERS'),
-        helpers,
-        renderHeader('Scalars'),
-        renderScalars(scalars, config),
-        renderHeader('Enum'),
-        ...enums.map(e => renderEnum(e, config)),
-        renderHeader('FRAGMENTS'),
-        ...fragments.map(t => renderType(t, config)),
-        ...fragments.map(f => renderFragment(f)),
-        renderHeader('INPUTS'),
-        ...inputs.map(t => renderType(t, config)),
-        renderHeader('TYPES'),
-        ...types.map(t => renderType(t, config)),
-        renderHeader('QUERIES'),
-        ...queries.map(q => renderQuery(q)),
-        renderSdk(functions),
-      ].join('\n');
+      const imports = findUsageInputs(documents, schema);
+      const fragments = findUsageFragments(documents);
+      const operations = findUsageOperation(documents, schema, config);
+      const enums = findUsageEnums(imports, fragments, operations, schema);
+      const scalars = findScalars(schema);
+
+      return runPrettierIfExists(
+        config,
+        [
+          printHelpers(),
+          printScalars(scalars, config),
+          ...enums.map(e => printEnum(e, config)),
+          ...imports.map(i => printInput(i, config)),
+          ...fragments.map(f => printFragmentType(f, schema, config)),
+          ...fragments.map(f => printFragmentGql(f)),
+          ...operations.map(o => printOperationTypes(o, config)),
+          printCreateSdkFunction(operations, config),
+        ].join('\n'),
+      );
     } catch (e) {
       console.log(e);
       process.exit(1);
@@ -99,4 +67,4 @@ const plugin: CodegenPlugin = {
   addToSchema: directives,
 };
 
-export default plugin;
+module.exports = plugin;
