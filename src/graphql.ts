@@ -1,9 +1,10 @@
-import { SelectionNode, TypeNode } from 'graphql/language/ast';
-import { Config, Directive, TsType, TsTypeObject } from './_types';
+import { DirectiveNode, SelectionNode, StringValueNode, TypeNode } from 'graphql/language/ast';
+import { Config, Directive, TsType, TsTypeInLine, TsTypeObject } from './_types';
 import { getNamedType, GraphQLType } from 'graphql/type/definition';
 import {
   assertObjectType,
   getNullableType,
+  GraphQLDirective,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -14,7 +15,7 @@ import {
   isNullableType,
 } from 'graphql/type';
 import { Kind } from 'graphql/language';
-import { pluginDirectiveNames, pluginDirectives } from './operation';
+import { pluginDirectives } from './operation';
 
 export const selectionSetToTsType = (
   parent: GraphQLObjectType,
@@ -33,7 +34,7 @@ export const selectionSetToTsType = (
 
     if (selection.kind === Kind.FIELD) {
       const parentField = parent.getFields()[selection.name.value];
-      const directives = selection.directives.map(d => d.name.value);
+      const directives = selection.directives.map(d => parseDirective(d));
       let field: TsType;
       if (selection.selectionSet && selection.selectionSet.selections.length) {
         const nestedParent = assertObjectType(getNamedType(parentField.type));
@@ -52,7 +53,13 @@ export const selectionSetToTsType = (
         };
       }
       for (let directive of directives) {
-        switch (directive) {
+        switch (directive.name) {
+          case 'type':
+            field.kind = 'inLine';
+            field.isList = false;
+            field.isNullable = false;
+            (field as TsTypeInLine).type = directive.args.t;
+            break;
           case 'first':
             field.isList = false;
             field.isNullable = true;
@@ -72,6 +79,18 @@ export const selectionSetToTsType = (
   return type;
 };
 
+const parseDirective = (directive: DirectiveNode) => {
+  const args: Record<string, any> = {};
+  if (directive.arguments) {
+    for (let argument of directive.arguments) {
+      args[argument.name.value] = (argument.value as StringValueNode).value;
+    }
+  }
+  return {
+    name: directive.name.value,
+    args,
+  };
+};
 export const getGraphqlTypeWrappers = (type: GraphQLType) => {
   return {
     isList: isListType(isNonNullType(type) ? getNullableType(type) : type),
@@ -128,7 +147,7 @@ const findDirectives = (selections: readonly SelectionNode[], key = '') => {
     if (selection.kind === Kind.FIELD) {
       const path = key + selection.name.value;
       for (let directive of selection.directives) {
-        if (pluginDirectiveNames.includes(directive.name.value)) {
+        if (pluginDirectives.includes(directive.name.value)) {
           directives.push({
             name: directive.name.value,
             path,

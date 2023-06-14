@@ -26,7 +26,7 @@ export const printOperationTypes = (operation: Operation, config: Config) => {
   const queryFragments = operation.fragments.map(fragment => `$\{${fragment}FragmentQuery}\n`);
   let query = print(operation.definition);
   for (let pluginDirective of pluginDirectives) {
-    query = query.replace(new RegExp('@' + pluginDirective, 'g'), '');
+    query = query.replace(new RegExp('@' + pluginDirective + '(\\(.*?\\))?', 'g'), '');
   }
   content.push(`const ${getOperationQueryName(operation.name)} = \`${queryFragments.join('')}${query}\`;`);
   return content.join('\n');
@@ -127,8 +127,7 @@ export const printInput = (input: GraphQLInputObjectType, config: Config, unionL
 };
 
 export const printHelpers = (config: Config) => {
-  let content = fs.readFileSync(path.resolve(__dirname, '../templates/helpers.ts'), 'utf8');
-  return content;
+  return fs.readFileSync(path.resolve(__dirname, '../templates/helpers.ts'), 'utf8');
 };
 
 export const printNullable = (config: Config) => {

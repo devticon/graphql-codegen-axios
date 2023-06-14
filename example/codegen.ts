@@ -15,6 +15,7 @@ export default {
       enabled: false,
       path: 'hasura',
     },
+    emitDirectives: true,
   },
   generates: {
     './src/generated.ts': {

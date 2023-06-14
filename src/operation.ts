@@ -16,8 +16,25 @@ import { getGraphqlTypeWrappers, graphqlTypeToTypescript, selectionSetToTsType }
 import { GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLSchema } from 'graphql/type';
 import { GraphQLType } from 'graphql/type/definition';
 import { findUsageFragments } from './fragments';
-
-export const pluginDirectives = ['firstOrFail', 'first', 'singleResult', 'required', 'type'];
+export const pluginDirectivesOptions: { name: string; args?: [{ name: string; type: string }] }[] = [
+  {
+    name: 'firstOrFail',
+  },
+  {
+    name: 'first',
+  },
+  {
+    name: 'singleResult',
+  },
+  {
+    name: 'required',
+  },
+  {
+    name: 'type',
+    args: [{ name: 't', type: 'String!' }],
+  },
+];
+export const pluginDirectives = pluginDirectivesOptions.map(p => p.name);
 export const findUsageOperation = (documents: CodegenDocuments, schema: GraphQLSchema, config: Config) => {
   const allFragments = findUsageFragments(documents);
   const operations: Operation[] = [];

@@ -1,6 +1,6 @@
 query getCat{
   test: cat {
     id
-    tag: tags @first
+    tags @type(t: "Record<string, string>")
   }
 }
