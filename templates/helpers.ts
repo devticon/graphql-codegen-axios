@@ -11,7 +11,7 @@ type GraphqlRequestParams = {
   variables?: any;
 };
 
-const get = (key: string, data: any) => {
+export const get = (key: string, data: any) => {
   const p = key.split('.');
   let d = data;
   while (p.length) {
@@ -26,7 +26,7 @@ const get = (key: string, data: any) => {
   }
 };
 
-const set = (key: string, value: any, data: any) => {
+export const set = (key: string, value: any, data: any) => {
   const p = key.split('.');
   let d = data;
   while (p.length) {
@@ -42,7 +42,7 @@ const set = (key: string, value: any, data: any) => {
   }
 };
 
-const first = (key: string) => (data: any) => {
+export const first = (key: string) => (data: any) => {
   let p = key.split('.');
   while (p.length) {
     const k = p.shift();
@@ -75,7 +75,7 @@ export const firstOrFail = (key: string) => (data: any) => {
   return data;
 };
 
-const required = (path: string) => (data: any) => {
+export const required = (path: string) => (data: any) => {
   const p = path.split('.');
   let d: any = data;
   while (p.length) {
