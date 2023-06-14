@@ -14,7 +14,7 @@ import {
   isNullableType,
 } from 'graphql/type';
 import { Kind } from 'graphql/language';
-import { pluginDirectives } from './operation';
+import { pluginDirectiveNames, pluginDirectives } from './operation';
 
 export const selectionSetToTsType = (
   parent: GraphQLObjectType,
@@ -55,6 +55,7 @@ export const selectionSetToTsType = (
         switch (directive) {
           case 'first':
             field.isList = false;
+            field.isNullable = true;
             break;
           case 'firstOrFail':
             field.isList = false;
@@ -90,6 +91,8 @@ export const graphqlTypeToTypescript = (type: GraphQLType, config: Config) => {
       return namedType.name + (config?.suffix?.enum || '');
     case Kind.INPUT_OBJECT_TYPE_DEFINITION:
       return namedType.name + (config?.suffix?.input || '');
+    case Kind.OBJECT_TYPE_DEFINITION:
+      return namedType.name;
     default:
       throw new Error(`unsupported kind: ${namedType.astNode.kind}`);
   }
@@ -125,7 +128,7 @@ const findDirectives = (selections: readonly SelectionNode[], key = '') => {
     if (selection.kind === Kind.FIELD) {
       const path = key + selection.name.value;
       for (let directive of selection.directives) {
-        if (pluginDirectives.includes(directive.name.value)) {
+        if (pluginDirectiveNames.includes(directive.name.value)) {
           directives.push({
             name: directive.name.value,
             path,

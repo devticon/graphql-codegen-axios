@@ -1,13 +1,8 @@
 type Cat {
-  name: String!
-  age: Int
-  owner: Owner
-}
-
-type Owner {
-  name: String!
+  id: String!
+  tags: [String]!
 }
 
 type Query {
-  getCats(limit: Int, offset: Int): [Cat!]!
+  cat: Cat
 }

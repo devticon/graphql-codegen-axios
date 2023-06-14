@@ -7,10 +7,13 @@ export default {
       timestamptz: 'Date | string',
       timestamp: 'Date | string',
     },
-    emitDirectives: true,
+    nullableValue: 'T | undefined | null',
     suffix: {
-      input: 'Input',
       fragment: 'Fragment',
+    },
+    hasura: {
+      enabled: false,
+      path: 'hasura',
     },
   },
   generates: {

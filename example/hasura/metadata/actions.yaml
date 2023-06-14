@@ -1,0 +1,346 @@
+actions:
+  - name: calculateSubscriptionPrice
+    definition:
+      kind: ""
+      handler: '{{F}}/calculateSubscriptionPriceAction'
+    permissions:
+      - role: project
+      - role: customer
+  - name: createCard
+    definition:
+      kind: synchronous
+      handler: '{{F}}/createCardAction'
+    permissions:
+      - role: project
+  - name: createOrder
+    definition:
+      kind: synchronous
+      handler: '{{F}}/createOrderAction'
+      forward_client_headers: true
+    permissions:
+      - role: project
+  - name: createPayment
+    definition:
+      kind: synchronous
+      handler: '{{F}}/createPaymentAction'
+    permissions:
+      - role: paywall
+      - role: project
+      - role: customer
+  - name: createPaymentToken
+    definition:
+      kind: synchronous
+      handler: '{{F}}/createPaymentToken'
+    permissions:
+      - role: project
+      - role: subscription
+  - name: createProject
+    definition:
+      kind: synchronous
+      handler: '{{F}}/createProject'
+    permissions:
+      - role: project
+      - role: user
+  - name: editSubscriptionItem
+    definition:
+      kind: synchronous
+      handler: '{{F}}/editSubscriptionItem'
+    permissions:
+      - role: project
+  - name: exchangeCurrency
+    definition:
+      kind: ""
+      handler: '{{F}}/exchangeCurrency'
+    permissions:
+      - role: paywall
+      - role: project
+  - name: generateOneVoucher
+    definition:
+      kind: synchronous
+      handler: '{{F}}/generateOneVoucher'
+    permissions:
+      - role: project
+  - name: generateOrderPaywallUrl
+    definition:
+      kind: ""
+      handler: '{{F}}/generateOrderPaywallUrl'
+    permissions:
+      - role: project
+    comment: generateOrderPaywallUrl
+  - name: generateSubscriptionUrl
+    definition:
+      kind: ""
+      handler: '{{F}}/generateSubscriptionUrl'
+    permissions:
+      - role: project
+  - name: generateVouchers
+    definition:
+      kind: synchronous
+      handler: '{{F}}/generateVouchers'
+    permissions:
+      - role: project
+  - name: getPaymentParameters
+    definition:
+      kind: ""
+      handler: '{{F}}/getPaymentParameters'
+    permissions:
+      - role: paywall
+      - role: project
+  - name: getProjectPaymentMethod
+    definition:
+      kind: ""
+      handler: '{{F}}/getProjectPaymentMethods'
+      forward_client_headers: true
+    permissions:
+      - role: paywall
+      - role: project
+  - name: orderMetrics
+    definition:
+      kind: ""
+      handler: '{{F}}/orderMetrics'
+    permissions:
+      - role: project
+    comment: orderMetrics
+  - name: refundOrder
+    definition:
+      kind: synchronous
+      handler: '{{F}}/refundOrderAction'
+    permissions:
+      - role: project
+  - name: refundPayment
+    definition:
+      kind: synchronous
+      handler: '{{F}}/refundPayment'
+    permissions:
+      - role: project
+  - name: rejectOrder
+    definition:
+      kind: synchronous
+      handler: '{{F}}/rejectOrder'
+    permissions:
+      - role: paywall
+      - role: project
+  - name: setProjectScript
+    definition:
+      kind: synchronous
+      handler: '{{F}}/setProjectScript'
+    permissions:
+      - role: project
+  - name: updateSubscriptionItemPricesByProductId
+    definition:
+      kind: synchronous
+      handler: '{{F}}/updateSubscriptionItemPricesByProductId'
+    permissions:
+      - role: project
+  - name: verifyPaywallToken
+    definition:
+      kind: synchronous
+      handler: '{{F}}/verifyPaywallToken'
+    permissions:
+      - role: paywall
+      - role: project
+  - name: voucherByCode
+    definition:
+      kind: ""
+      handler: '{{F}}/voucherByCode'
+custom_types:
+  enums:
+    - name: OrderMerticsGroupBy
+      values:
+        - description: null
+          is_deprecated: null
+          value: Day
+        - description: null
+          is_deprecated: null
+          value: Week
+        - description: null
+          is_deprecated: null
+          value: Month
+  input_objects:
+    - name: CreateOrderInput
+    - name: CustomerInput
+    - name: CalculateSubscriptionPriceInput
+    - name: CreatePaymentInput
+    - name: CreateCardInput
+    - name: CreateOrderItemInput
+    - name: CreateOrderCardInput
+    - name: PaymentMethodParams
+    - name: CardCredentialsInput
+    - name: GetPaymentParametersInput
+    - name: CreateProjectInput
+    - name: SampleInput
+    - name: GenerateOneVoucherInput
+    - name: CreatePaymentTokenInput
+    - name: OrderMetricsInput
+    - name: OrderMetricInput
+    - name: CalculateSubscriptionPriceItemInput
+    - name: UpdateSubscriptionItemSubscriptionitemsetinput
+  objects:
+    - name: CreateOrderOutput
+      relationships:
+        - field_mapping:
+            orderId: id
+          name: order
+          remote_table:
+            name: order
+            schema: public
+          source: default
+          type: object
+        - field_mapping:
+            paymentId: id
+          name: payment
+          remote_table:
+            name: payment
+            schema: public
+          source: default
+          type: object
+    - name: CreateCardOutput
+      relationships:
+        - field_mapping:
+            cardId: id
+          name: card
+          remote_table:
+            name: card
+            schema: public
+          source: default
+          type: object
+    - name: RefundOrderOutput
+    - name: Void
+    - name: CalculateSubscriptionPriceOutput
+    - name: CalculateSubscriptionPriceOutputPrice
+    - name: CreatePaymentOutput
+      relationships:
+        - field_mapping:
+            paymentId: id
+          name: payment
+          remote_table:
+            name: payment
+            schema: public
+          source: default
+          type: object
+    - name: VerifyPaymentTokenCustomerOutput
+    - name: VerifyPaymentTokenOutput
+      relationships:
+        - field_mapping:
+            orderId: id
+          name: order
+          remote_table:
+            name: order
+            schema: public
+          source: default
+          type: object
+    - name: VerifyPaymentTokenItemOutput
+    - name: GenerateVouchersOutput
+      relationships:
+        - field_mapping:
+            generationId: generationId
+          name: vouchers
+          remote_table:
+            name: voucher
+            schema: public
+          source: default
+          type: array
+    - name: GetCurrencyExchangeMultiplayerOutput
+    - name: GetCurrencyExchangeRateOutput
+    - name: RefundPaymentOutput
+    - name: GePaymentParametersOutput
+    - name: GetPaymentParametersOutput
+    - name: VerifyPaywallTokenOutput
+      relationships:
+        - field_mapping:
+            orderId: id
+          name: order
+          remote_table:
+            name: order
+            schema: public
+          source: default
+          type: object
+    - name: CreateProjectOutput
+      relationships:
+        - field_mapping:
+            projectId: id
+          name: project
+          remote_table:
+            name: project
+            schema: public
+          source: default
+          type: object
+    - name: SelectedProjectOutput
+      relationships:
+        - field_mapping:
+            projectId: id
+          name: project
+          remote_table:
+            name: project
+            schema: public
+          source: default
+          type: object
+    - name: GenerateOneVoucherOutput
+      relationships:
+        - field_mapping:
+            voucherId: id
+          name: voucher
+          remote_table:
+            name: voucher
+            schema: public
+          source: default
+          type: object
+    - name: DeactivateCardOutput
+      relationships:
+        - field_mapping:
+            cardId: id
+          name: card
+          remote_table:
+            name: card
+            schema: public
+          source: default
+          type: object
+    - name: GenerateOrderPaywallUrlOutput
+    - name: ProjectPaymentMethodNew
+    - name: GetPaymentMethodByOrderOutput
+    - name: GetProjectPaymentMethodOutput
+      relationships:
+        - field_mapping:
+            paymentMethod: paymentMethod
+            providerId: providerId
+          name: providerPaymentMethod
+          remote_table:
+            name: providerPaymentMethod
+            schema: public
+          source: default
+          type: object
+        - field_mapping:
+            categoryId: id
+          name: category
+          remote_table:
+            name: paymentMethodCategory
+            schema: public
+          source: default
+          type: object
+        - field_mapping:
+            paymentMethod: paymentMethod
+            projectId: projectId
+            providerId: providerId
+          name: projectProviderPaymentMethod
+          remote_table:
+            name: projectProviderPaymentMethod
+            schema: public
+          source: default
+          type: object
+    - name: GenerateSubscriptionUrlOutput
+    - name: CreatePaymentTokenOutput
+      relationships:
+        - field_mapping:
+            paymentTokenId: id
+          name: paymentToken
+          remote_table:
+            name: paymentToken
+            schema: public
+          source: default
+          type: object
+    - name: OrderMetric
+    - name: VoucherOutput
+    - name: CalculateSubscriptionPriceOutputItem
+    - name: UpdateSubscriptionItemOutput
+    - name: UpdateSubscriptionItemPricesByProductIdOutput
+  scalars: []

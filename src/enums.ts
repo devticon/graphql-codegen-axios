@@ -3,6 +3,7 @@ import {
   assertObjectType,
   GraphQLEnumType,
   GraphQLInputObjectType,
+  GraphQLObjectType,
   GraphQLSchema,
   isEnumType,
 } from 'graphql/type';
@@ -13,6 +14,7 @@ import { Operation } from './_types';
 
 export const findUsageEnums = (
   inputs: GraphQLInputObjectType[],
+  objects: GraphQLObjectType[],
   fragments: FragmentDefinitionNode[],
   operations: Operation[],
   schema: GraphQLSchema,
@@ -36,6 +38,14 @@ export const findUsageEnums = (
       }
     }
   }
+  for (let object of objects) {
+    for (let value of Object.values(object.getFields())) {
+      const type = getNamedType(value.type);
+      if (isEnumType(type)) {
+        enums.add(type);
+      }
+    }
+  }
   for (let operation of operations) {
     if (operation.variables && operation.variables.kind === 'object')
       for (let field of operation.variables.fields) {
@@ -47,5 +57,6 @@ export const findUsageEnums = (
         }
       }
   }
+
   return [...enums];
 };

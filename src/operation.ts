@@ -17,7 +17,7 @@ import { GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLSchema } from 'g
 import { GraphQLType } from 'graphql/type/definition';
 import { findUsageFragments } from './fragments';
 
-export const pluginDirectives = ['firstOrFail', 'first', 'singleResult', 'required'];
+export const pluginDirectives = ['firstOrFail', 'first', 'singleResult', 'required', 'type'];
 export const findUsageOperation = (documents: CodegenDocuments, schema: GraphQLSchema, config: Config) => {
   const allFragments = findUsageFragments(documents);
   const operations: Operation[] = [];
@@ -43,7 +43,7 @@ export const findUsageOperation = (documents: CodegenDocuments, schema: GraphQLS
           const fields = definition.selectionSet.selections.filter(f => f.kind === Kind.FIELD) as FieldNode[];
           directives.push({
             name: 'singleResult',
-            path: fields[0].name.value,
+            path: fields[0].alias?.value || fields[0].name.value,
             args: {},
           });
         }
@@ -66,6 +66,17 @@ export const findUsageOperation = (documents: CodegenDocuments, schema: GraphQLS
           };
         }
 
+        const variableFields: TsType[] = definition.variableDefinitions.map(variableDefinition => {
+          const type = parseVariableNode(variableDefinition.type, schema);
+          return {
+            name: variableDefinition.variable.name.value,
+            kind: 'inLine',
+            type: graphqlTypeToTypescript(type, config),
+            ...getGraphqlTypeWrappers(type),
+            unionListAndObject: true,
+          };
+        });
+
         operations.push({
           name,
           definition,
@@ -75,18 +86,10 @@ export const findUsageOperation = (documents: CodegenDocuments, schema: GraphQLS
             ? {
                 kind: 'object',
                 name: capitalize(name) + 'Variables',
-                fields: definition.variableDefinitions.map(variableDefinition => {
-                  const type = parseVariableNode(variableDefinition.type, schema);
-                  return {
-                    name: variableDefinition.variable.name.value,
-                    kind: 'inLine',
-                    type: graphqlTypeToTypescript(type, config),
-                    ...getGraphqlTypeWrappers(type),
-                  };
-                }),
+                fields: variableFields,
                 unions: [],
                 isList: false,
-                isNullable: false,
+                isNullable: variableFields.filter(f => f.isNullable).length === variableFields.length,
               }
             : undefined,
           results: resultsType,
@@ -111,7 +114,7 @@ const findDirectives = (selections: readonly SelectionNode[], fragments: Fragmen
     }
 
     if (selection.kind === Kind.FIELD) {
-      const path = key + selection.name.value;
+      const path = key + (selection.alias?.value || selection.name.value);
       for (let directive of selection.directives) {
         if (pluginDirectives.includes(directive.name.value)) {
           directives.push({
@@ -146,52 +149,21 @@ const getNestedType = (type: TsType, path: string) => {
   return t;
 };
 
-const changeTsTypeField = <T extends any>(type: TsTypeObject, path: string, value: Partial<TsType>) => {
-  const p = path.split('.');
-  let t: { fields: TsType[] } = type;
-  while (p.length) {
-    const k = p.shift();
-    const f = t.fields.find(f => f.name === k);
-    if (!f) {
-      throw new Error(`cannot find field ${k}`);
-    }
-    if (p.length === 0) {
-      Object.assign(f, value);
-    } else if (f.kind === 'object') {
-      t = f;
-    } else {
-      throw new Error('logic error');
-    }
-  }
-};
-
-const toFieldsMap = (f: TsTypeObject) => {
-  const fields: FieldsMap = {};
-  for (let field of f.fields) {
-    fields[field.name] = {
-      ...field,
-      fields: field.kind === 'object' ? toFieldsMap(field) : {},
-    };
-  }
-  return fields;
-};
-
 const parseVariableNode = (type: TypeNode, schema: GraphQLSchema, isNullable = true, isList = false): GraphQLType => {
-  if (type.kind === Kind.NON_NULL_TYPE) {
-    return parseVariableNode(type.type, schema, false, isList);
-  }
   if (type.kind === Kind.LIST_TYPE) {
     return parseVariableNode(type.type, schema, isNullable, true);
   }
-
-  let gqlType: GraphQLType = schema.getType(type.name.value);
-  if (isList) {
-    gqlType = new GraphQLList(gqlType);
+  if (type.kind === Kind.NON_NULL_TYPE) {
+    return parseVariableNode(type.type, schema, false, isList);
   }
+  let gqlType: GraphQLType = schema.getType(type.name.value);
+
   if (!isNullable) {
     gqlType = new GraphQLNonNull(gqlType);
   }
-
+  if (isList) {
+    gqlType = new GraphQLList(gqlType);
+  }
   return gqlType;
 };
 

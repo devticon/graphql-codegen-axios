@@ -1,14 +1,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { findUsageInputs } from './input';
-import { CodegenPlugin, Config } from './_types';
+import { CodegenPlugin } from './_types';
 import {
   printCreateSdkFunction,
   printEnum,
   printFragmentGql,
   printFragmentType,
   printHelpers,
+  printIgnores,
   printInput,
+  printNullable,
   printOperationTypes,
   printScalars,
 } from './print';
@@ -18,41 +20,53 @@ import { findUsageOperation, pluginDirectives } from './operation';
 import { findScalars } from './scalar';
 import { runPrettierIfExists } from './prettier';
 import { printSchema } from 'graphql/utilities';
+import { printHasura } from './hasura';
 
-const configDefaults: Partial<Config> = {
-  autoSingleResult: true,
-  prettier: true,
-};
 const directives = pluginDirectives.map(d => `directive @${d} on FIELD`).join('\n');
 const plugin: CodegenPlugin = {
-  plugin(schema, documents, config) {
+  plugin(schema, documents, config = {}) {
     try {
       config = {
-        ...configDefaults,
+        autoSingleResult: true,
+        prettier: true,
+        hasura: {
+          enabled: false,
+          ...(config.hasura || {}),
+        },
         ...config,
       };
       if (config.emitDirectives) {
         const directivesPath = typeof config.emitDirectives === 'string' ? config.emitDirectives : 'directives.graphql';
+        fs.mkdirSync(path.dirname(directivesPath), { recursive: true });
         fs.writeFileSync(path.join(directivesPath), directives);
       }
       if (config.emitSchema) {
         const schemaPath = typeof config.emitSchema === 'string' ? config.emitSchema : 'schema.graphql';
+        fs.mkdirSync(path.dirname(schemaPath), { recursive: true });
         fs.writeFileSync(path.join(schemaPath), printSchema(schema));
       }
 
-      const imports = findUsageInputs(documents, schema);
+      const imports = findUsageInputs(documents, schema, config);
       const fragments = findUsageFragments(documents);
       const operations = findUsageOperation(documents, schema, config);
-      const enums = findUsageEnums(imports, fragments, operations, schema);
+      const enums = findUsageEnums(imports, [], fragments, operations, schema);
       const scalars = findScalars(schema);
 
+      if (config.hasura.enabled) {
+        fs.writeFileSync(
+          path.join(config.hasura.output || 'hasura.ts'),
+          runPrettierIfExists(config, printHasura(schema, config)),
+        );
+      }
       return runPrettierIfExists(
         config,
         [
-          printHelpers(),
+          printIgnores(config),
+          printNullable(config),
+          printHelpers(config),
           printScalars(scalars, config),
           ...enums.map(e => printEnum(e, config)),
-          ...imports.map(i => printInput(i, config)),
+          ...imports.map(i => printInput(i, config, true)),
           ...fragments.map(f => printFragmentType(f, schema, config)),
           ...fragments.map(f => printFragmentGql(f)),
           ...operations.map(o => printOperationTypes(o, config)),

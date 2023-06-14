@@ -2,6 +2,7 @@ import {
   assertObjectType,
   GraphQLEnumType,
   GraphQLInputObjectType,
+  GraphQLObjectType,
   GraphQLScalarType,
   GraphQLSchema,
 } from 'graphql/type';
@@ -13,6 +14,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { pluginDirectives } from './operation';
 import { capitalize } from './utils';
+import { getNamedType } from 'graphql/type/definition';
 
 export const printOperationTypes = (operation: Operation, config: Config) => {
   const content: string[] = [];
@@ -52,7 +54,7 @@ export const printCreateSdkFunction = (operations: Operation[], config: Config) 
       const defArgs: string[] = [];
       const execArgs: string[] = ['client'];
       if (hasVariables) {
-        defArgs.push(`variables: ${operation.variables.name}`);
+        defArgs.push(`variables${operation.variables.isNullable ? '?' : ''}: ${operation.variables.name}`);
         execArgs.push(`{variables, query: ${getOperationQueryName(operation.name)}}`);
       } else {
         execArgs.push(`{query: ${getOperationQueryName(operation.name)}}`);
@@ -84,6 +86,21 @@ export const printFragmentType = (fragment: FragmentDefinitionNode, schema: Grap
   });
 };
 
+export const printObjectType = (object: GraphQLObjectType, config: Config) => {
+  return printTsTypeVariable({
+    kind: 'object',
+    name: capitalize(object.name),
+    fields: Object.values(assertObjectType(getNamedType(object)).getFields()).map(field => ({
+      name: field.name,
+      kind: 'inLine',
+      type: graphqlTypeToTypescript(field.type, config),
+      ...getGraphqlTypeWrappers(field.type),
+    })),
+    isList: false,
+    isNullable: false,
+  });
+};
+
 export const printFragmentGql = (fragment: FragmentDefinitionNode) => {
   let query = print(fragment);
   for (let pluginDirective of pluginDirectives) {
@@ -92,7 +109,7 @@ export const printFragmentGql = (fragment: FragmentDefinitionNode) => {
   return `const ${fragment.name.value}FragmentQuery = \`${query}\``;
 };
 
-export const printInput = (input: GraphQLInputObjectType, config: Config) => {
+export const printInput = (input: GraphQLInputObjectType, config: Config, unionListAndObject = false) => {
   const suffix = config?.suffix?.input || '';
   return printTsTypeVariable({
     kind: 'object',
@@ -102,16 +119,25 @@ export const printInput = (input: GraphQLInputObjectType, config: Config) => {
       kind: 'inLine',
       type: graphqlTypeToTypescript(field.type, config),
       ...getGraphqlTypeWrappers(field.type),
+      unionListAndObject,
     })),
     isNullable: false,
     isList: false,
   });
 };
 
-export const printHelpers = () => {
-  return fs.readFileSync(path.resolve(__dirname, '../templates/helpers.ts'));
+export const printHelpers = (config: Config) => {
+  let content = fs.readFileSync(path.resolve(__dirname, '../templates/helpers.ts'), 'utf8');
+  return content;
 };
 
+export const printNullable = (config: Config) => {
+  return `type Nullable<T> = ${config.nullableValue ? config.nullableValue : 'T | null'};\n`;
+};
+
+export const printIgnores = (config: Config) => {
+  return `// @ts-nocheck\n/* tslint:disable */\n`;
+};
 export const printScalars = (scalars: GraphQLScalarType[], config: Config) => {
   const map: Record<string, string> = {
     String: 'string',
@@ -146,9 +172,16 @@ const printTsType = (type: TsType) => {
     ts = `Nullable<${ts}>`;
   }
 
+  if (type.isList && type.unionListAndObject) {
+    ts = `(${ts} | ${printTsType({
+      ...type,
+      unionListAndObject: false,
+      isList: false,
+    })})`;
+  }
   return ts;
 };
-const printTsTypeVariable = (type: NamedTsType) => {
+export const printTsTypeVariable = (type: NamedTsType) => {
   return `export type ${type.name} = ${printTsType(type)};`;
 };
 

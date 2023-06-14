@@ -1,10 +1,19 @@
-import { GraphQLInputObjectType, GraphQLList, GraphQLNonNull, GraphQLSchema } from 'graphql/type';
+import {
+  assertInputType,
+  GraphQLInputObjectType,
+  GraphQLList,
+  GraphQLNonNull,
+  GraphQLSchema,
+  isInputObjectType,
+  isInputType,
+} from 'graphql/type';
 import { getNamedType, GraphQLEnumType, GraphQLInputType, GraphQLScalarType } from 'graphql/type/definition';
-import { CodegenDocuments, TsType } from './_types';
+import { CodegenDocuments, Config, TsType } from './_types';
 import { NamedTypeNode, TypeNode } from 'graphql/language/ast';
 import { Kind } from 'graphql/language';
+import { parseHasuraAction } from './hasura';
 
-export const findUsageInputs = (documents: CodegenDocuments, schema: GraphQLSchema) => {
+export const findUsageInputs = (documents: CodegenDocuments, schema: GraphQLSchema, config: Config) => {
   const inputs = new Set<GraphQLInputObjectType>();
   for (let { document } of documents) {
     for (let definition of document.definitions) {
@@ -22,10 +31,22 @@ export const findUsageInputs = (documents: CodegenDocuments, schema: GraphQLSche
     }
   }
 
+  if (config.hasura.enabled) {
+    const actions = parseHasuraAction(schema, config);
+    for (let action of actions) {
+      for (let arg of action.operation.args) {
+        const type = getNamedType(arg.type);
+        if (isInputObjectType(type) && !inputs.has(type)) {
+          inputs.add(type);
+          findDeepInputs(type, inputs);
+        }
+      }
+    }
+  }
   return [...inputs];
 };
 
-const findDeepInputs = (parent: GraphQLInputObjectType, imports: Set<GraphQLInputObjectType>) => {
+export const findDeepInputs = (parent: GraphQLInputObjectType, imports: Set<GraphQLInputObjectType>) => {
   for (let field of Object.values(parent.getFields())) {
     const fieldType = getNamedType(field.type);
     if (fieldType instanceof GraphQLInputObjectType) {
