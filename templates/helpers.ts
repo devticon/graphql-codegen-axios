@@ -46,19 +46,17 @@ export const first = (key: string) => (data: any) => {
   let p = key.split('.');
   while (p.length) {
     const k = p.shift();
-    let d = data[k];
+    let d = get(k, data);
+
+    if (!p.length) {
+      set(k, d[0], data);
+      break;
+    }
     if (Array.isArray(d)) {
-      for (let [index] of d.entries()) {
-        let i = index.toString();
-        if (p.length) {
-          i += '.' + p.join('.');
-        }
-        first(i)(d);
+      for (let i of d.keys()) {
+        first(p.join('.'))(d[i]);
       }
-    } else {
-      if (p.length) {
-        set(key, get(key + '.0', data), data);
-      }
+      break;
     }
   }
   return data;

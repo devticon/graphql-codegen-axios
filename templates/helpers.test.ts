@@ -16,15 +16,22 @@ describe('get', () => {
 });
 
 describe('first', () => {
-  test('first product', () => {
+  test('first of empty array', () => {
     const data = { products: [] as any[] };
 
-    expect(first('products')(data)).toBeUndefined();
+    expect(first('products')(data)).toMatchObject({ products: undefined });
   });
 
-  test('first product', () => {
-    const data = { products: [{ id: 'abc' }, { id: 'def' }] };
+  test('first of nested array', () => {
+    const data = {
+      products: [
+        { id: 'abc', tags: ['a', 'b', 'c'] },
+        { id: 'def', tags: ['e', 'f', 'g'] },
+      ],
+    };
+    const result = first('products.tags')(data);
 
-    expect(first('products')(data)).toBe(data.products[0]);
+    expect(result.products[0].tags).toBe('a');
+    expect(result.products[1].tags).toBe('e');
   });
 });
