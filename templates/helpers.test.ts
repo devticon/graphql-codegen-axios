@@ -46,9 +46,24 @@ describe('examples', () => {
         },
       ],
     };
+
     first('products.categories')(data);
     firstOrFail('products')(data);
     singleResult('products')(data);
+
+    expect(data).toBeDefined();
+  });
+
+  test('OrderQuery', () => {
+    const data = {
+      orderByPk: {
+        id: 'c11d5f85-7a27-4daa-acec-b217f8a795fc',
+        checkoutEvent: [{ createdAt: '2023-06-14T14:55:22.185859+00:00' }],
+      },
+    };
+
+    first('orderByPk.checkoutEvent')(data);
+    singleResult('orderByPk')(data);
 
     expect(data).toBeDefined();
   });
