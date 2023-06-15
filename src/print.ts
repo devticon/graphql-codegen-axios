@@ -6,7 +6,7 @@ import {
   GraphQLScalarType,
   GraphQLSchema,
 } from 'graphql/type';
-import { Config, NamedTsType, Operation, TsType } from './_types';
+import { Config, Directive, NamedTsType, Operation, TsType } from './_types';
 import { print } from 'graphql/language';
 import { FragmentDefinitionNode } from 'graphql/language/ast';
 import { getGraphqlTypeWrappers, graphqlTypeToTypescript, selectionSetToTsType } from './graphql';
@@ -32,25 +32,30 @@ export const printOperationTypes = (operation: Operation, config: Config) => {
   return content.join('\n');
 };
 
+export const directivesToFunctions = (directives: Directive[]) => {
+  const functions: string[] = [];
+  directives.sort((a, b) => (a.path.length < b.path.length ? 1 : b.path.length < a.path.length ? -1 : 0));
+  for (let directive of directives) {
+    switch (directive.name) {
+      case 'first':
+      case 'firstOrFail':
+      case 'required':
+        functions.push(`${directive.name}("${directive.path}")`);
+        break;
+    }
+  }
+
+  return functions;
+};
 export const printCreateSdkFunction = (operations: Operation[], config: Config) => {
   const fields = operations
     .map(operation => {
       const hasVariables = !!operation.variables;
-      const functions: string[] = [];
-
-      for (let directive of operation.directives) {
-        switch (directive.name) {
-          case 'first':
-          case 'firstOrFail':
-          case 'required':
-            functions.push(`${directive.name}("${directive.path}")`);
-            break;
-        }
-      }
-
+      const functions = directivesToFunctions(operation.directives);
       if (operation.singleResultKey) {
         functions.push(`singleResult("${operation.singleResultKey}")`);
       }
+
       const defArgs: string[] = [];
       const execArgs: string[] = ['client'];
       if (hasVariables) {

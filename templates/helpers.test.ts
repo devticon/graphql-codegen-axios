@@ -46,9 +46,8 @@ describe('examples', () => {
         },
       ],
     };
-
-    firstOrFail('products')(data);
     first('products.categories')(data);
+    firstOrFail('products')(data);
     singleResult('products')(data);
 
     expect(data).toBeDefined();

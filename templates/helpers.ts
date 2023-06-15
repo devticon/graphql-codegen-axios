@@ -49,6 +49,9 @@ export const first = (key: string) => (data: any) => {
     let d = get(k, data);
 
     if (!p.length) {
+      if (!Array.isArray(d)) {
+        throw new Error(`${key} is not array`);
+      }
       set(k, d[0], data);
       break;
     }
