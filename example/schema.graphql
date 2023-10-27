@@ -3,6 +3,13 @@ type Cat {
   tags: [String]!
 }
 
+enum Size {
+  small
+  big
+}
 type Query {
-  cat: Cat
+  cat(sizes: [Size]!): Cat
+}
+type Mutation {
+  test: Cat
 }

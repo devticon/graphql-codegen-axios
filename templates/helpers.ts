@@ -44,15 +44,16 @@ export const set = (key: string, value: any, data: any) => {
 
 export const first = (key: string) => (data: any) => {
   let p = key.split('.');
+  let d: any = data;
   while (p.length) {
     const k = p.shift();
-    let d = get(k, data);
+    d = get(k, d);
 
     if (!p.length) {
       if (!Array.isArray(d)) {
         throw new Error(`${key} is not array`);
       }
-      set(k, d[0], data);
+      set(key, d[0], data);
       break;
     }
     if (Array.isArray(d)) {

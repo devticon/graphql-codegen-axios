@@ -62,10 +62,11 @@ const plugin: CodegenPlugin = {
       const scalars = findScalars(schema);
 
       if (config.hasura.enabled) {
-        fs.writeFileSync(
-          path.join(config.hasura.output || 'hasura.ts'),
-          runPrettierIfExists(config, printHasura(schema, config)),
-        );
+        const output = config.hasura.output || 'hasura.ts';
+        if (!fs.existsSync(path.dirname(output))) {
+          fs.mkdirSync(path.dirname(output), { recursive: true });
+        }
+        fs.writeFileSync(path.join(output), runPrettierIfExists(config, printHasura(schema, config)));
       }
       return runPrettierIfExists(
         config,

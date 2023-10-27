@@ -3,10 +3,12 @@ import * as yaml from 'js-yaml';
 import * as path from 'path';
 import * as fs from 'fs';
 import {
+  assertEnumType,
   assertObjectType,
   GraphQLInputObjectType,
   GraphQLObjectType,
   GraphQLSchema,
+  isEnumType,
   isInputObjectType,
   isObjectType,
 } from 'graphql/type';
@@ -22,7 +24,7 @@ import {
   printScalars,
   printTsTypeVariable,
 } from './print';
-import { getNamedType } from 'graphql/type/definition';
+import { getNamedType, GraphQLEnumType } from 'graphql/type/definition';
 import { findDeepInputs } from './input';
 import { findUsageEnums } from './enums';
 import { findScalars } from './scalar';
@@ -52,7 +54,7 @@ export const printHasura = (schema: GraphQLSchema, config: Config) => {
   const metadata = parseHasuraAction(schema, config);
   const inputs = findInputs(metadata);
   const objects = findUsageObjects(schema, config);
-  const enums = findUsageEnums(inputs, objects, [], [], schema);
+  const enums = [...findUsageEnums(inputs, objects, [], [], schema), ...findEnums(metadata)];
   for (let action of metadata) {
     const argumentsType: NamedTsObjectType = {
       kind: 'object',
@@ -120,7 +122,7 @@ export const parseHasuraAction = (schema: GraphQLSchema, config: Config): Hasura
     const operation =
       schema.getQueryType().getFields()[action.name] || schema.getMutationType().getFields()[action.name];
     const type = assertObjectType(getNamedType(operation.type));
-    const object = objects.find(o => o.name === type.name);
+    const object = objects.find(o => o.name === type.name)!;
     const relationsFields = (object.relationships || []).map(r => r.name);
 
     for (let relationsField of relationsFields) {
@@ -151,6 +153,19 @@ export const findInputs = (actions: HasuraAction[]) => {
     });
   });
   return [...inputs];
+};
+
+export const findEnums = (actions: HasuraAction[]) => {
+  const enums = new Set<GraphQLEnumType>();
+  actions.forEach(action => {
+    action.operation.args.forEach(arg => {
+      const type = getNamedType(arg.type);
+      if (isEnumType(getNamedType(type))) {
+        enums.add(assertEnumType(getNamedType(type)));
+      }
+    });
+  });
+  return [...enums];
 };
 
 const findDeepTypes = (parent: GraphQLObjectType, types: Set<GraphQLObjectType>) => {

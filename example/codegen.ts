@@ -12,8 +12,9 @@ export default {
       fragment: 'Fragment',
     },
     hasura: {
-      enabled: false,
+      enabled: true,
       path: 'hasura',
+      output: 'test/test/hasura.ts',
     },
     emitDirectives: true,
   },

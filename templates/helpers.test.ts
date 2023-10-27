@@ -55,16 +55,16 @@ describe('examples', () => {
   });
 
   test('OrderQuery', () => {
-    const data = {
+    let data = {
       orderByPk: {
-        id: 'c11d5f85-7a27-4daa-acec-b217f8a795fc',
-        checkoutEvent: [{ createdAt: '2023-06-14T14:55:22.185859+00:00' }],
+        id: 'a',
+        checkoutEvent: [{ createdAt: '2023-06-14' }],
       },
     };
 
-    first('orderByPk.checkoutEvent')(data);
-    singleResult('orderByPk')(data);
+    data = first('orderByPk.checkoutEvent')(data);
+    data = singleResult('orderByPk')(data);
 
-    expect(data).toBeDefined();
+    expect(data).toEqual({ id: 'a', checkoutEvent: { createdAt: '2023-06-14' } });
   });
 });

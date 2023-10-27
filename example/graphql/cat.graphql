@@ -1,5 +1,5 @@
-query getCat{
-  test: cat {
+query getCat {
+  test: cat(sizes: [big]) {
     id
     tags @type(t: "Record<string, string>")
   }
