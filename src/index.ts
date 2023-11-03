@@ -10,9 +10,11 @@ import {
   printHelpers,
   printIgnores,
   printInput,
+  printOperationResultsJsonSchema,
   printNullable,
   printOperationTypes,
   printScalars,
+  printFragmentJsonSchema,
 } from './print';
 import { findUsageEnums } from './enums';
 import { findUsageFragments } from './fragments';
@@ -29,9 +31,10 @@ const directives = pluginDirectivesOptions
       args = d.args.map(a => `${a.name}: ${a.type}`).join(',');
       args = `(${args})`;
     }
-    return `directive @${d.name}${args} on FIELD`;
+    return `directive @${d.name}${args} on ${d.on.join(' | ')}`;
   })
   .join('\n');
+
 const plugin: CodegenPlugin = {
   plugin(schema, documents, config = {}) {
     try {
@@ -68,6 +71,7 @@ const plugin: CodegenPlugin = {
         }
         fs.writeFileSync(path.join(output), runPrettierIfExists(config, printHasura(schema, config)));
       }
+
       return runPrettierIfExists(
         config,
         [
@@ -81,6 +85,8 @@ const plugin: CodegenPlugin = {
           ...fragments.map(f => printFragmentGql(f)),
           ...operations.map(o => printOperationTypes(o, config)),
           printCreateSdkFunction(operations, config),
+          ...printOperationResultsJsonSchema(operations, config),
+          ...printFragmentJsonSchema(fragments, schema, config),
         ].join('\n'),
       );
     } catch (e) {

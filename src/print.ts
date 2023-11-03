@@ -47,6 +47,65 @@ export const directivesToFunctions = (directives: Directive[]) => {
 
   return functions;
 };
+export const printOperationResultsJsonSchema = (operations: Operation[], config: Config) => {
+  operations = operations.filter(o => o.directives.some(d => d.name === 'jsonSchema'));
+  return operations
+    .filter(o => o.directives.some(d => d.name === 'jsonSchema'))
+    .map(o => `export const ${o.name}JsonSchema = ${JSON.stringify(tsTypeToJsonSchema(o.results, config), null, 2)}`);
+};
+export const printFragmentJsonSchema = (fragments: FragmentDefinitionNode[], schema: GraphQLSchema, config: Config) => {
+  const suffix = config?.suffix?.fragment || '';
+  return fragments
+    .filter(f => f.directives.some(d => d.name.value === 'jsonSchema'))
+    .map(fragment => {
+      const parent = assertObjectType(schema.getType(fragment.typeCondition.name.value));
+      return {
+        name: fragment.name.value + suffix,
+        kind: 'object' as 'object',
+        isList: false,
+        isNullable: false,
+        ...selectionSetToTsType(parent, fragment.selectionSet.selections, config),
+      };
+    })
+    .map(o => `export const ${o.name}JsonSchema = ${JSON.stringify(tsTypeToJsonSchema(o, config), null, 2)}`);
+};
+
+const tsTypeToJsonSchema = (tsType: TsType, config: Config): any => {
+  if (tsType.kind === 'object') {
+    return {
+      type: 'object',
+      properties: tsType.fields.reduce((p, f) => {
+        p[f.name] = tsTypeToJsonSchema(f, config);
+        return p;
+      }, {} as any),
+    };
+  }
+
+  if (tsType.isList) {
+    return {
+      type: 'array',
+      items: tsTypeToJsonSchema({ ...tsType, isList: false }, config),
+    };
+  }
+  return {
+    type: gqlScalarTypeToJsonSchemaType(tsType.type as any, config),
+  };
+};
+
+const gqlScalarTypeToJsonSchemaType = (type: string, config: Config) => {
+  console.log(type);
+  switch (type) {
+    case 'Scalar["String"]':
+      return 'string';
+    case 'Scalar["Int"]':
+      return 'integer';
+    case 'Scalar["Float"]':
+      return 'number';
+    case 'Scalar["Boolean"]':
+      return 'boolean';
+  }
+  return 'string';
+};
 export const printCreateSdkFunction = (operations: Operation[], config: Config) => {
   const fields = operations
     .map(operation => {

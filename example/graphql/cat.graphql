@@ -1,6 +1,15 @@
+fragment TEst on Cat @jsonSchema {
+  id
+  tags
+  size
+  owner {
+    name
+    age
+  }
+}
+
 query getCat {
   test: cat(sizes: [big]) {
-    id
-    tags @type(t: "Record<string, string>")
+    ...TEst
   }
 }

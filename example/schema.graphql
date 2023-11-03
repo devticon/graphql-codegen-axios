@@ -1,8 +1,14 @@
 type Cat {
   id: String!
   tags: [String]!
+  size: Size,
+  owner: Owner
 }
 
+type Owner {
+  name: String,
+  age: Int
+}
 enum Size {
   small
   big

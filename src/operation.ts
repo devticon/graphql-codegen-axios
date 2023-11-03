@@ -16,22 +16,31 @@ import { getGraphqlTypeWrappers, graphqlTypeToTypescript, selectionSetToTsType }
 import { GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLSchema } from 'graphql/type';
 import { GraphQLType } from 'graphql/type/definition';
 import { findUsageFragments } from './fragments';
-export const pluginDirectivesOptions: { name: string; args?: [{ name: string; type: string }] }[] = [
+export const pluginDirectivesOptions: { name: string; args?: [{ name: string; type: string }]; on: string[] }[] = [
   {
     name: 'firstOrFail',
+    on: ['FIELD'],
   },
   {
     name: 'first',
+    on: ['FIELD'],
   },
   {
     name: 'singleResult',
+    on: ['FIELD'],
   },
   {
     name: 'required',
+    on: ['FIELD'],
   },
   {
     name: 'type',
     args: [{ name: 't', type: 'String!' }],
+    on: ['FIELD'],
+  },
+  {
+    name: 'jsonSchema',
+    on: ['FIELD', 'FRAGMENT_DEFINITION'],
   },
 ];
 export const pluginDirectives = pluginDirectivesOptions.map(p => p.name);
