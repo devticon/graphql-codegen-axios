@@ -3,7 +3,7 @@ fragment TEst on Cat @jsonSchema {
   tags
   size
   owner {
-    name
+    name  @type(t: "Record<string, string>")
     age
   }
 }
