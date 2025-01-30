@@ -14,6 +14,9 @@ type GraphqlRequestParams = {
 export const get = (key: string, data: any) => {
   const p = key.split('.');
   let d = data;
+  if (!d) {
+    return;
+  }
   while (p.length) {
     const k = p.shift();
     d = d[k];
@@ -48,7 +51,9 @@ export const first = (key: string) => (data: any) => {
   while (p.length) {
     const k = p.shift();
     d = get(k, d);
-
+    if (!d) {
+      return;
+    }
     if (!p.length) {
       if (!Array.isArray(d)) {
         throw new Error(`${key} is not array`);
