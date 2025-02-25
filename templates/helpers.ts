@@ -52,7 +52,7 @@ export const first = (key: string) => (data: any) => {
     const k = p.shift();
     d = get(k, d);
     if (!d) {
-      return;
+      return data;
     }
     if (!p.length) {
       if (!Array.isArray(d)) {
