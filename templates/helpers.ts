@@ -86,6 +86,9 @@ export const required = (path: string) => (data: any) => {
   const p = path.split('.');
   let d: any = data;
   while (p.length) {
+    if (!d) {
+      return data;
+    }
     const k = p.shift();
     const f = d[k!];
     if (Array.isArray(f) && p.length) {
