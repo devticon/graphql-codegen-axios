@@ -1,6 +1,6 @@
 import { Config } from './_types';
 
-export const runPrettierIfExists = (config: Config, content: string) => {
+export const runPrettierIfExists = async (config: Config, content: string) => {
   if (config.prettier === false) {
     return content;
   }

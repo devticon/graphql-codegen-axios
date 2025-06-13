@@ -36,7 +36,7 @@ const directives = pluginDirectivesOptions
   .join('\n');
 
 const plugin: CodegenPlugin = {
-  plugin(schema, documents, config = {}) {
+  async plugin(schema, documents, config = {}) {
     try {
       config = {
         autoSingleResult: true,
@@ -69,7 +69,7 @@ const plugin: CodegenPlugin = {
         if (!fs.existsSync(path.dirname(output))) {
           fs.mkdirSync(path.dirname(output), { recursive: true });
         }
-        fs.writeFileSync(path.join(output), runPrettierIfExists(config, printHasura(schema, config)));
+        fs.writeFileSync(path.join(output), await runPrettierIfExists(config, printHasura(schema, config)));
       }
 
       return runPrettierIfExists(
