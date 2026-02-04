@@ -117,7 +117,8 @@ const execute = (
   client.post('', body, config).then(({ data }: AxiosResponse<GraphqlResponse<any>>) => {
     const errors = data.errors;
     if (errors && errors.length > 0) {
-      throw new GraphqlError('Request failed', errors);
+      const queryName = body.query.replace(/\s+/g, ' ').split(/[({]/g)[0];
+      throw new GraphqlError(`GraphQL '${queryName}' failed`, errors);
     }
     let d = data.data;
     for (let func of functions) {
