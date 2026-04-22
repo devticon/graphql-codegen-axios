@@ -140,6 +140,7 @@ export const singleResult = (key: string) => (data: any) => get(key, data);
 export class GraphqlError extends Error {
   constructor(message: string, public gqlErrors: GraphQLError[]) {
     super(`${message} ${gqlErrors.map(e => e.message).join('\n')}`);
+    this.name = 'GraphqlError';
   }
 }
 
@@ -150,5 +151,6 @@ export class QueryError extends Error {
     super(message);
     this.query = params.query;
     this.variables = params.variables;
+    this.name = 'QueryError';
   }
 }
